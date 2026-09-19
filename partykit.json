@@ -1,0 +1,6 @@
+{
+  "$schema": "https://www.partykit.io/schema.json",
+  "name": "reflex-arena",
+  "main": "party/rooms/gameRoom.ts",
+  "compatibilityDate": "2024-01-01"
+}
