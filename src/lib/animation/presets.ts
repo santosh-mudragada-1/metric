@@ -27,6 +27,15 @@ export function hoverOut(target: Target) {
   return gsap.to(target, { scale: 1, duration: DURATION.fast, ease: EASE.smooth })
 }
 
+/** A heavier, overshooting pop for the one hero CTA on the dashboard — pairs with the rainbow-glow ring. */
+export function heroHoverIn(target: Target) {
+  return gsap.to(target, { scale: 1.07, duration: DURATION.fast, ease: EASE.out })
+}
+
+export function heroHoverOut(target: Target) {
+  return gsap.to(target, { scale: 1, duration: DURATION.base, ease: EASE.smooth })
+}
+
 export function shakeError(target: Target) {
   const tl = gsap.timeline()
   tl.to(target, { x: -8, duration: 0.05, ease: 'power1.inOut' })

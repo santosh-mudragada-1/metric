@@ -4,6 +4,10 @@ import { ReactionPreview } from '@/components/previews/ReactionPreview'
 import { AimPreview } from '@/components/previews/AimPreview'
 import { SequencePreview } from '@/components/previews/SequencePreview'
 import { NumberPreview } from '@/components/previews/NumberPreview'
+import { ChimpPreview } from '@/components/previews/ChimpPreview'
+import { VisualPreview } from '@/components/previews/VisualPreview'
+import { VerbalPreview } from '@/components/previews/VerbalPreview'
+import { TypingPreview } from '@/components/previews/TypingPreview'
 
 export interface GameConfig {
   id: GameId
@@ -12,7 +16,7 @@ export interface GameConfig {
   blurb: string
   /** Small looping visual that gives the game life in the index — not a static icon. */
   Preview: ComponentType
-  accent: 'reaction' | 'aim' | 'sequence' | 'number'
+  accent: 'reaction' | 'aim' | 'sequence' | 'number' | 'chimp' | 'visual' | 'verbal' | 'typing'
 }
 
 export const GAMES: GameConfig[] = [
@@ -44,6 +48,34 @@ export const GAMES: GameConfig[] = [
     Preview: NumberPreview,
     accent: 'number',
   },
+  {
+    id: 'chimp-test',
+    name: 'Chimp Test',
+    blurb: 'Tap the numbers in order.',
+    Preview: ChimpPreview,
+    accent: 'chimp',
+  },
+  {
+    id: 'visual-memory',
+    name: 'Visual Memory',
+    blurb: 'Recall the lit tiles.',
+    Preview: VisualPreview,
+    accent: 'visual',
+  },
+  {
+    id: 'verbal-memory',
+    name: 'Verbal Memory',
+    blurb: 'Spot the repeat word.',
+    Preview: VerbalPreview,
+    accent: 'verbal',
+  },
+  {
+    id: 'typing',
+    name: 'Typing',
+    blurb: 'Type the passage fast.',
+    Preview: TypingPreview,
+    accent: 'typing',
+  },
 ]
 
 export const GAME_MAP: Record<GameId, GameConfig> = Object.fromEntries(GAMES.map((g) => [g.id, g])) as Record<
@@ -67,4 +99,8 @@ export const ACCENT_CLASSES: Record<GameConfig['accent'], AccentClasses> = {
   aim: { text: 'text-accent-aim', bgDim: 'bg-accent-aim-dim' },
   sequence: { text: 'text-accent-sequence', bgDim: 'bg-accent-sequence-dim' },
   number: { text: 'text-accent-number', bgDim: 'bg-accent-number-dim' },
+  chimp: { text: 'text-accent-chimp', bgDim: 'bg-accent-chimp-dim' },
+  visual: { text: 'text-accent-visual', bgDim: 'bg-accent-visual-dim' },
+  verbal: { text: 'text-accent-verbal', bgDim: 'bg-accent-verbal-dim' },
+  typing: { text: 'text-accent-typing', bgDim: 'bg-accent-typing-dim' },
 }

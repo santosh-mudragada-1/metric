@@ -1,0 +1,22 @@
+/** Common, short, easily-typed English words — shared by verbal memory (recognition) and typing (transcription). */
+export const WORD_BANK = [
+  'time', 'year', 'people', 'way', 'day', 'man', 'thing', 'woman', 'life', 'child',
+  'world', 'school', 'state', 'family', 'student', 'group', 'country', 'problem', 'hand', 'part',
+  'place', 'case', 'week', 'company', 'system', 'program', 'question', 'work', 'government', 'number',
+  'night', 'point', 'home', 'water', 'room', 'mother', 'area', 'money', 'story', 'fact',
+  'month', 'lot', 'right', 'study', 'book', 'eye', 'job', 'word', 'business', 'issue',
+  'side', 'kind', 'head', 'house', 'service', 'friend', 'father', 'power', 'hour', 'game',
+  'line', 'end', 'member', 'law', 'car', 'city', 'community', 'name', 'president', 'team',
+  'minute', 'idea', 'body', 'information', 'back', 'parent', 'face', 'others', 'level', 'office',
+  'door', 'health', 'person', 'art', 'war', 'history', 'party', 'result', 'change', 'morning',
+  'reason', 'research', 'girl', 'guy', 'moment', 'air', 'teacher', 'force', 'education', 'light',
+  'tree', 'river', 'mountain', 'ocean', 'cloud', 'stone', 'bridge', 'garden', 'forest', 'island',
+  'music', 'color', 'sound', 'shape', 'dream', 'paper', 'glass', 'metal', 'paint', 'brush',
+  'table', 'chair', 'window', 'floor', 'wall', 'roof', 'street', 'field', 'beach', 'desert',
+  'animal', 'bird', 'fish', 'horse', 'lion', 'tiger', 'snake', 'eagle', 'whale', 'rabbit',
+  'apple', 'bread', 'coffee', 'sugar', 'salt', 'fruit', 'orange', 'lemon', 'butter', 'cheese',
+  'king', 'queen', 'castle', 'sword', 'shield', 'crown', 'knight', 'dragon', 'ghost', 'tower',
+  'summer', 'winter', 'spring', 'autumn', 'storm', 'rain', 'snow', 'wind', 'sun', 'moon',
+  'star', 'planet', 'space', 'rocket', 'engine', 'wheel', 'train', 'plane', 'boat', 'road',
+  'phone', 'screen', 'camera', 'letter', 'signal', 'button', 'clock', 'watch', 'candle', 'mirror',
+]

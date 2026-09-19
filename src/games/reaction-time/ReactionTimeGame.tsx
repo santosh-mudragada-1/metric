@@ -12,6 +12,7 @@ export function ReactionTimeGame() {
   if (phase === 'result' && result) {
     return (
       <ResultCard
+        gameId="reaction-time"
         accent="reaction"
         primary={{ value: result.averageMs, unit: 'ms', label: 'average reaction' }}
         isNewBest={isNewBest}

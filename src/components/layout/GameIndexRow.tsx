@@ -3,6 +3,7 @@ import { ArrowUpRightIcon } from '@heroicons/react/24/outline'
 import { playClick } from '@/lib/sound/sfx'
 import { useLocalBest } from '@/hooks/useLocalBest'
 import { withViewTransition } from '@/lib/viewTransition'
+import { AnimatedHeading } from '@/components/ui/AnimatedHeading'
 import type { GameConfig } from '@/games.config'
 import type { Bests } from '@/lib/storage'
 
@@ -11,6 +12,10 @@ const ACCENT_TEXT: Record<GameConfig['accent'], string> = {
   aim: 'group-hover:text-accent-aim',
   sequence: 'group-hover:text-accent-sequence',
   number: 'group-hover:text-accent-number',
+  chimp: 'group-hover:text-accent-chimp',
+  visual: 'group-hover:text-accent-visual',
+  verbal: 'group-hover:text-accent-verbal',
+  typing: 'group-hover:text-accent-typing',
 }
 
 function formatBest(game: GameConfig, best: Bests[keyof Bests]): string | null {
@@ -24,6 +29,14 @@ function formatBest(game: GameConfig, best: Bests[keyof Bests]): string | null {
       return 'bestLevel' in best ? `level ${best.bestLevel} best` : null
     case 'number-memory':
       return 'bestDigits' in best ? `${best.bestDigits} digits best` : null
+    case 'chimp-test':
+      return 'bestLevel' in best ? `level ${best.bestLevel} best` : null
+    case 'visual-memory':
+      return 'bestLevel' in best ? `level ${best.bestLevel} best` : null
+    case 'verbal-memory':
+      return 'bestScore' in best ? `${best.bestScore} score best` : null
+    case 'typing':
+      return 'bestWpm' in best ? `${best.bestWpm} wpm best` : null
     default:
       return null
   }
@@ -56,11 +69,12 @@ export function GameIndexRow({ game, index }: { game: GameConfig; index: number 
       </span>
 
       <div className="min-w-0">
-        <h3
+        <AnimatedHeading
+          as="h3"
+          text={game.name}
           className={`truncate font-display text-3xl font-semibold lowercase tracking-tight text-text transition-colors duration-200 sm:text-6xl ${ACCENT_TEXT[game.accent]}`}
-        >
-          {game.name}
-        </h3>
+          radius={190}
+        />
         <p className="mt-1 truncate text-sm text-text-muted sm:text-base">{game.blurb}</p>
       </div>
 

@@ -14,6 +14,10 @@ import { ReactionTimeMultiplayer } from '@/multiplayer/adapters/ReactionTimeMult
 import { AimTrainerMultiplayer } from '@/multiplayer/adapters/AimTrainerMultiplayer'
 import { SequenceMemoryMultiplayer } from '@/multiplayer/adapters/SequenceMemoryMultiplayer'
 import { NumberMemoryMultiplayer } from '@/multiplayer/adapters/NumberMemoryMultiplayer'
+import { ChimpTestMultiplayer } from '@/multiplayer/adapters/ChimpTestMultiplayer'
+import { VisualMemoryMultiplayer } from '@/multiplayer/adapters/VisualMemoryMultiplayer'
+import { VerbalMemoryMultiplayer } from '@/multiplayer/adapters/VerbalMemoryMultiplayer'
+import { TypingMultiplayer } from '@/multiplayer/adapters/TypingMultiplayer'
 
 function GameSwitch({ gameId }: { gameId: GameId }) {
   switch (gameId) {
@@ -25,12 +29,20 @@ function GameSwitch({ gameId }: { gameId: GameId }) {
       return <SequenceMemoryMultiplayer />
     case 'number-memory':
       return <NumberMemoryMultiplayer />
+    case 'chimp-test':
+      return <ChimpTestMultiplayer />
+    case 'visual-memory':
+      return <VisualMemoryMultiplayer />
+    case 'verbal-memory':
+      return <VerbalMemoryMultiplayer />
+    case 'typing':
+      return <TypingMultiplayer />
   }
 }
 
 function RoomContent({ roomCode }: { roomCode: string }) {
   const [searchParams] = useSearchParams()
-  const { state, send, connected } = usePartyRoom()
+  const { state, send, connected, error } = usePartyRoom()
   const { profile } = useProfile()
   const appliedInitialSettings = useRef(false)
 
@@ -40,6 +52,9 @@ function RoomContent({ roomCode }: { roomCode: string }) {
     if (!me?.isHost || state.phase !== 'lobby') return
     const gameParam = searchParams.get('game')
     const roundsParam = searchParams.get('rounds')
+    const timerParam = searchParams.get('timer')
+    const maxPlayersParam = searchParams.get('maxPlayers')
+    const eliminationParam = searchParams.get('elimination')
     if (gameParam && isGameId(gameParam) && gameParam !== state.gameId) {
       send({ type: 'hostChangeGame', gameId: gameParam })
     }
@@ -47,8 +62,31 @@ function RoomContent({ roomCode }: { roomCode: string }) {
     if (rounds && !Number.isNaN(rounds) && rounds !== state.maxRounds) {
       send({ type: 'hostSetRounds', maxRounds: rounds })
     }
+    const roundTimeLimitMs = timerParam ? Number(timerParam) * 1000 : null
+    if (roundTimeLimitMs && !Number.isNaN(roundTimeLimitMs) && roundTimeLimitMs !== state.roundTimeLimitMs) {
+      send({ type: 'hostSetRoundTimer', roundTimeLimitMs })
+    }
+    const maxPlayers = maxPlayersParam ? Number(maxPlayersParam) : null
+    if (maxPlayers && !Number.isNaN(maxPlayers) && maxPlayers !== state.maxPlayers) {
+      send({ type: 'hostSetMaxPlayers', maxPlayers })
+    }
+    if (eliminationParam !== null) {
+      const eliminationMode = eliminationParam === 'true'
+      if (eliminationMode !== state.eliminationMode) {
+        send({ type: 'hostSetElimination', eliminationMode })
+      }
+    }
     appliedInitialSettings.current = true
   }, [state, profile.clientPlayerId, searchParams, send])
+
+  if (error) {
+    return (
+      <div className="flex h-96 flex-col items-center justify-center gap-2 text-center">
+        <p className="font-display text-xl font-semibold lowercase tracking-tight text-text">{error}</p>
+        <p className="font-mono text-xs tracking-[0.1em] text-text-dim uppercase">try a different room code</p>
+      </div>
+    )
+  }
 
   if (!connected || !state) {
     return (
@@ -60,6 +98,7 @@ function RoomContent({ roomCode }: { roomCode: string }) {
 
   const me = state.players.find((p) => p.id === profile.clientPlayerId)
   const isHost = me?.isHost ?? false
+  const eliminatedIds = new Set(state.players.filter((p) => p.eliminated).map((p) => p.id))
 
   return (
     <div className="pt-6">
@@ -76,11 +115,23 @@ function RoomContent({ roomCode }: { roomCode: string }) {
 
       {state.phase === 'countdown' && <Countdown endsAt={state.countdownEndsAt} onComplete={() => {}} />}
 
-      {state.phase === 'playing' && <GameSwitch gameId={state.gameId} />}
+      {state.phase === 'playing' &&
+        (me?.eliminated ? (
+          <div className="relative flex h-[65vh] min-h-96 max-h-[38rem] flex-col items-center justify-center gap-3 overflow-hidden rounded-panel border border-border bg-surface text-center">
+            <p className="font-display text-2xl font-semibold lowercase tracking-tight text-text">you're eliminated</p>
+            <p className="max-w-xs text-sm text-text-muted">Watching the rest of the room play it out.</p>
+          </div>
+        ) : (
+          <GameSwitch gameId={state.gameId} />
+        ))}
 
       {state.phase === 'roundResult' && (
         <div className="flex flex-col items-center gap-8 py-6">
-          <RoomLeaderboard leaderboard={state.leaderboard} title={`Standings after round ${state.round}`} />
+          <RoomLeaderboard
+            leaderboard={state.leaderboard}
+            title={`Standings after round ${state.round}`}
+            eliminatedIds={eliminatedIds}
+          />
           {isHost ? (
             <Button variant="primary" chevron onClick={() => send({ type: 'hostStartRound' })}>
               {state.round >= state.maxRounds ? 'See final results' : 'Next round'}
@@ -93,7 +144,7 @@ function RoomContent({ roomCode }: { roomCode: string }) {
 
       {state.phase === 'finished' && (
         <div className="flex flex-col items-center gap-8 py-6">
-          <RoomLeaderboard leaderboard={state.leaderboard} title="Final results" />
+          <RoomLeaderboard leaderboard={state.leaderboard} title="Final results" eliminatedIds={eliminatedIds} />
           {isHost && (
             <Button variant="primary" chevron onClick={() => send({ type: 'hostStartRound' })}>
               Play again

@@ -1,9 +1,10 @@
 import { useRef } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router'
 import { useGSAP } from '@gsap/react'
-import { SpeakerWaveIcon, SpeakerXMarkIcon } from '@heroicons/react/24/outline'
+import { MoonIcon, SpeakerWaveIcon, SpeakerXMarkIcon, SunIcon } from '@heroicons/react/24/outline'
 import { IconButton } from '@/components/ui/IconButton'
 import { useSound } from '@/hooks/useSound'
+import { useTheme } from '@/hooks/useTheme'
 import { enterMode } from '@/lib/animation/presets'
 
 const NAV_ITEMS = [
@@ -13,6 +14,7 @@ const NAV_ITEMS = [
 
 export function AppShell() {
   const { muted, toggleMute } = useSound()
+  const { theme, toggleTheme } = useTheme()
   const location = useLocation()
   const outletRef = useRef<HTMLDivElement>(null)
 
@@ -25,7 +27,7 @@ export function AppShell() {
       <header className="flex items-center justify-between py-6 sm:py-8">
         <div className="flex items-center gap-8 sm:gap-10">
           <Link to="/" className="font-display text-base font-semibold tracking-tight text-text">
-            reflex<span className="text-text-dim">/</span>arena
+            metric
           </Link>
           <nav className="hidden items-center gap-6 sm:flex">
             {NAV_ITEMS.map((item) => (
@@ -51,9 +53,18 @@ export function AppShell() {
             ))}
           </nav>
         </div>
-        <IconButton label={muted ? 'Unmute sound' : 'Mute sound'} silent onClick={toggleMute}>
-          {muted ? <SpeakerXMarkIcon className="h-5 w-5" /> : <SpeakerWaveIcon className="h-5 w-5" />}
-        </IconButton>
+        <div className="flex items-center gap-2">
+          <IconButton
+            label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            silent
+            onClick={toggleTheme}
+          >
+            {theme === 'dark' ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
+          </IconButton>
+          <IconButton label={muted ? 'Unmute sound' : 'Mute sound'} silent onClick={toggleMute}>
+            {muted ? <SpeakerXMarkIcon className="h-5 w-5" /> : <SpeakerWaveIcon className="h-5 w-5" />}
+          </IconButton>
+        </div>
       </header>
       <main ref={outletRef} className="flex flex-1 flex-col pb-20 sm:pb-24">
         <Outlet />

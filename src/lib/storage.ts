@@ -1,4 +1,4 @@
-const NAMESPACE = 'reflex-arena:v1'
+const NAMESPACE = 'metric:v1'
 
 function read<T>(key: string, fallback: T): T {
   try {
@@ -39,11 +39,36 @@ export interface NumberMemoryBest {
   lastPlayedAt: string
 }
 
+export interface ChimpTestBest {
+  bestLevel: number
+  lastPlayedAt: string
+}
+
+export interface VisualMemoryBest {
+  bestLevel: number
+  lastPlayedAt: string
+}
+
+export interface VerbalMemoryBest {
+  bestScore: number
+  lastPlayedAt: string
+}
+
+export interface TypingBest {
+  bestWpm: number
+  bestAccuracy: number
+  lastPlayedAt: string
+}
+
 export interface Bests {
   'reaction-time'?: ReactionTimeBest
   'aim-trainer'?: AimTrainerBest
   'sequence-memory'?: SequenceMemoryBest
   'number-memory'?: NumberMemoryBest
+  'chimp-test'?: ChimpTestBest
+  'visual-memory'?: VisualMemoryBest
+  'verbal-memory'?: VerbalMemoryBest
+  typing?: TypingBest
 }
 
 export function getBests(): Bests {
@@ -75,4 +100,14 @@ export function getMuted(): boolean {
 
 export function setMuted(muted: boolean): void {
   write('muted', muted)
+}
+
+export type Theme = 'dark' | 'light'
+
+export function getStoredTheme(): Theme | null {
+  return read<Theme | null>('theme', null)
+}
+
+export function setStoredTheme(theme: Theme): void {
+  write('theme', theme)
 }

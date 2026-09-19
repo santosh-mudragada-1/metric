@@ -2,6 +2,7 @@ import { CheckCircleIcon, StarIcon } from '@heroicons/react/24/solid'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { CopyableCode } from '@/components/ui/CopyableCode'
+import { AnimatedHeading } from '@/components/ui/AnimatedHeading'
 import { GamePicker } from '@/multiplayer/GamePicker'
 import { GAME_MAP } from '@/games.config'
 import { useProfile } from '@/hooks/useProfile'
@@ -60,7 +61,12 @@ export function RoomLobby() {
       </Card>
 
       <Card className="flex flex-col gap-5 p-6 sm:p-7">
-        <h2 className="font-display text-lg font-semibold lowercase tracking-tight text-text">game settings</h2>
+        <AnimatedHeading
+          as="h2"
+          text="game settings"
+          className="font-display text-lg font-semibold lowercase tracking-tight text-text"
+          radius={100}
+        />
 
         {isHost ? (
           <>
@@ -84,6 +90,57 @@ export function RoomLobby() {
                 className="w-full"
               />
             </div>
+
+            <div>
+              <div className="mb-2 flex items-baseline justify-between">
+                <label className="font-mono text-[0.6875rem] tracking-[0.14em] text-text-dim uppercase">
+                  Timer per round
+                </label>
+                <span className="font-mono text-sm tabular-nums text-text">{state.roundTimeLimitMs / 1000}s</span>
+              </div>
+              <input
+                type="range"
+                min={15}
+                max={180}
+                step={5}
+                value={state.roundTimeLimitMs / 1000}
+                onChange={(e) => send({ type: 'hostSetRoundTimer', roundTimeLimitMs: Number(e.target.value) * 1000 })}
+                className="w-full"
+              />
+            </div>
+
+            <div>
+              <div className="mb-2 flex items-baseline justify-between">
+                <label className="font-mono text-[0.6875rem] tracking-[0.14em] text-text-dim uppercase">
+                  Player limit
+                </label>
+                <span className="font-mono text-sm tabular-nums text-text">{state.maxPlayers}</span>
+              </div>
+              <input
+                type="range"
+                min={2}
+                max={12}
+                value={state.maxPlayers}
+                onChange={(e) => send({ type: 'hostSetMaxPlayers', maxPlayers: Number(e.target.value) })}
+                className="w-full"
+              />
+            </div>
+
+            <label className="flex cursor-pointer items-center justify-between gap-4 border-t border-border pt-4">
+              <span>
+                <span className="block font-mono text-[0.6875rem] tracking-[0.14em] text-text-dim uppercase">
+                  Elimination mode
+                </span>
+                <span className="mt-0.5 block text-xs text-text-muted">Lowest scorer is cut each round</span>
+              </span>
+              <input
+                type="checkbox"
+                checked={state.eliminationMode}
+                onChange={(e) => send({ type: 'hostSetElimination', eliminationMode: e.target.checked })}
+                className="h-5 w-5 shrink-0 accent-invert"
+              />
+            </label>
+
             <Button
               variant="primary"
               chevron

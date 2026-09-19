@@ -5,6 +5,9 @@ export type ClientMessage =
   | { type: 'setReady'; ready: boolean }
   | { type: 'hostChangeGame'; gameId: GameId }
   | { type: 'hostSetRounds'; maxRounds: number }
+  | { type: 'hostSetMaxPlayers'; maxPlayers: number }
+  | { type: 'hostSetRoundTimer'; roundTimeLimitMs: number }
+  | { type: 'hostSetElimination'; eliminationMode: boolean }
   | { type: 'hostStartRound' }
   | { type: 'submitResult'; result: GameResult }
 

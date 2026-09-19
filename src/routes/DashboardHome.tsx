@@ -2,15 +2,20 @@ import { useNavigate } from 'react-router'
 import { ArrowRightIcon } from '@heroicons/react/24/outline'
 import { GAMES } from '@/games.config'
 import { GameIndexRow } from '@/components/layout/GameIndexRow'
-import { playClick } from '@/lib/sound/sfx'
+import { AnimatedHeading } from '@/components/ui/AnimatedHeading'
+import { useAnimation } from '@/hooks/useAnimation'
+import { heroHoverIn, heroHoverOut, pressDown, pressUp } from '@/lib/animation/presets'
+import { playClick, playRainbowHover } from '@/lib/sound/sfx'
 import { withViewTransition } from '@/lib/viewTransition'
 
 export default function DashboardHome() {
   const navigate = useNavigate()
+  const { scope, run } = useAnimation<HTMLButtonElement>()
 
   const goToFlagship = () => {
     playClick()
-    withViewTransition(() => navigate('/play/reaction-time'))
+    const game = GAMES[Math.floor(Math.random() * GAMES.length)]
+    withViewTransition(() => navigate(`/play/${game.id}`))
   }
 
   const goToParty = () => {
@@ -22,26 +27,37 @@ export default function DashboardHome() {
     <div className="flex flex-col pt-10 sm:pt-16">
       <section className="flex flex-col gap-8 sm:gap-10">
         <span className="font-mono text-xs font-medium tracking-[0.18em] text-text-dim uppercase sm:text-sm">
-          Reflex Arena — four tests
+          Metric — eight tests
         </span>
 
-        <h1 className="max-w-3xl font-display text-hero font-semibold text-text">
-          know your
-          <br />
-          numbers.
-        </h1>
+        <AnimatedHeading
+          as="h1"
+          text={'know your\nnumbers.'}
+          className="max-w-3xl font-display text-hero font-semibold text-text"
+          radius={220}
+          hoverWeight={900}
+        />
 
         <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between">
           <p className="max-w-sm text-base leading-relaxed text-text-muted">
-            Reaction, aim, memory, and recall — measured in milliseconds. Beat your best, or challenge a friend live.
+            Reaction, aim, memory, and recall — measured in milliseconds and words per minute. Beat your best, or
+            challenge a friend live.
           </p>
           <button
+            ref={scope}
             onClick={goToFlagship}
-            className="group inline-flex shrink-0 cursor-pointer items-center gap-3 rounded-lg bg-chalk px-7 py-4
-              font-display text-base font-semibold text-ink shadow-[var(--shadow-chalk)] transition-transform
-              duration-150 hover:scale-[1.02] active:scale-[0.98]"
+            onMouseEnter={run(() => {
+              heroHoverIn(scope.current)
+              playRainbowHover()
+            })}
+            onMouseLeave={run(() => heroHoverOut(scope.current))}
+            onPointerDown={run(() => pressDown(scope.current))}
+            onPointerUp={run(() => pressUp(scope.current))}
+            onPointerLeave={run(() => pressUp(scope.current))}
+            className="group rainbow-cta relative inline-flex shrink-0 cursor-pointer items-center gap-3 rounded-full
+              bg-invert px-7 py-4 font-display text-base font-semibold text-on-invert shadow-[var(--shadow-invert)]"
           >
-            Play reaction time
+            Play random test
             <ArrowRightIcon className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
           </button>
         </div>
@@ -63,13 +79,15 @@ export default function DashboardHome() {
           sm:flex-row sm:items-center sm:justify-between sm:py-10"
       >
         <div>
-          <h2 className="font-display text-2xl font-semibold lowercase tracking-tight text-text sm:text-3xl">
-            play with friends
-          </h2>
+          <AnimatedHeading
+            as="h2"
+            text="play with friends"
+            className="font-display text-2xl font-semibold lowercase tracking-tight text-text sm:text-3xl"
+          />
           <p className="mt-1.5 text-sm text-text-muted sm:text-base">Create a room, share the code, compete live.</p>
         </div>
         <span
-          className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-border-strong px-6 py-3.5
+          className="inline-flex shrink-0 items-center gap-2 rounded-full border border-border-strong px-6 py-3.5
             font-display text-sm font-medium text-text transition-colors duration-150 group-hover:border-text-muted
             group-hover:bg-surface-hover"
         >

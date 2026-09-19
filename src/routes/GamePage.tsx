@@ -5,6 +5,10 @@ import { ReactionTimeGame } from '@/games/reaction-time/ReactionTimeGame'
 import { AimTrainerGame } from '@/games/aim-trainer/AimTrainerGame'
 import { SequenceMemoryGame } from '@/games/sequence-memory/SequenceMemoryGame'
 import { NumberMemoryGame } from '@/games/number-memory/NumberMemoryGame'
+import { ChimpTestGame } from '@/games/chimp-test/ChimpTestGame'
+import { VisualMemoryGame } from '@/games/visual-memory/VisualMemoryGame'
+import { VerbalMemoryGame } from '@/games/verbal-memory/VerbalMemoryGame'
+import { TypingGame } from '@/games/typing/TypingGame'
 
 export default function GamePage() {
   const { gameId } = useParams<{ gameId: string }>()
@@ -20,6 +24,10 @@ export default function GamePage() {
       {gameId === 'aim-trainer' && <AimTrainerGame />}
       {gameId === 'sequence-memory' && <SequenceMemoryGame />}
       {gameId === 'number-memory' && <NumberMemoryGame />}
+      {gameId === 'chimp-test' && <ChimpTestGame />}
+      {gameId === 'visual-memory' && <VisualMemoryGame />}
+      {gameId === 'verbal-memory' && <VerbalMemoryGame />}
+      {gameId === 'typing' && <TypingGame />}
     </div>
   )
 }

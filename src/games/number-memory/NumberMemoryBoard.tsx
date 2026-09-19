@@ -38,8 +38,14 @@ export function NumberMemoryBoard({
   useEffect(() => {
     if (phase !== 'showing') return
     setBarPct(100)
-    const raf = requestAnimationFrame(() => setBarPct(0))
-    return () => cancelAnimationFrame(raf)
+    let raf2 = 0
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => setBarPct(0))
+    })
+    return () => {
+      cancelAnimationFrame(raf1)
+      cancelAnimationFrame(raf2)
+    }
   }, [phase, currentNumber])
 
   useEffect(() => {
@@ -47,7 +53,7 @@ export function NumberMemoryBoard({
   }, [phase])
 
   return (
-    <div className="relative flex h-[65vh] min-h-96 max-h-[38rem] flex-col items-center justify-center gap-5 overflow-hidden rounded-xl border border-border bg-surface p-6 text-center">
+    <div className="relative flex h-[65vh] min-h-96 max-h-[38rem] flex-col items-center justify-center gap-5 overflow-hidden rounded-panel border border-border bg-surface p-6 text-center">
       {phase !== 'idle' && (
         <div className="absolute top-5 left-5 flex items-center gap-2 sm:top-7 sm:left-7">
           <span
@@ -85,8 +91,18 @@ export function NumberMemoryBoard({
       )}
 
       {phase === 'input' && (
-        <div className="flex w-full max-w-xs flex-col items-center gap-5">
+        <div
+          onClick={() => inputRef.current?.focus()}
+          className="flex w-full max-w-2xl cursor-text flex-col items-center gap-5 px-2"
+        >
           <p className="font-mono text-xs tracking-[0.14em] text-text-dim uppercase">type the number you saw</p>
+          <p className="min-h-[3.5rem] w-full [overflow-wrap:anywhere] text-center font-mono text-3xl font-bold tabular-nums text-text sm:text-4xl">
+            {input}
+            <span
+              className="live-loop -ml-0.5 inline-block h-[0.85em] w-[3px] translate-y-[0.1em] bg-accent-number align-middle"
+              style={{ animation: 'caret-blink 1s step-end infinite' }}
+            />
+          </p>
           <input
             ref={inputRef}
             value={input}
@@ -94,8 +110,7 @@ export function NumberMemoryBoard({
             onKeyDown={(e) => e.key === 'Enter' && onSubmit()}
             inputMode="numeric"
             autoFocus
-            className="w-full rounded-lg border border-border-strong bg-surface-raised px-4 py-4 text-center
-              font-mono text-4xl tabular-nums tracking-[0.3em] text-text outline-none focus:border-accent-number"
+            className="absolute h-px w-px opacity-0"
           />
           <Button variant="primary" chevron onClick={onSubmit} disabled={input.length === 0}>
             Submit

@@ -16,7 +16,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const VARIANT_CLASSES: Record<Variant, string> = {
-  primary: 'bg-chalk text-ink shadow-[var(--shadow-chalk)] hover:bg-white',
+  primary: 'bg-invert text-on-invert shadow-[var(--shadow-invert)] hover:opacity-90',
   ghost: 'bg-transparent text-text border border-border-strong hover:border-text-muted hover:bg-surface-hover',
   danger: 'bg-danger-dim text-danger border border-danger/40 hover:bg-danger/20',
 }
@@ -39,7 +39,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
         if (typeof forwardedRef === 'function') forwardedRef(node)
         else if (forwardedRef) forwardedRef.current = node
       }}
-      className={`inline-flex items-center justify-center rounded-lg font-medium font-display
+      className={`inline-flex items-center justify-center rounded-full font-medium font-display
         transition-colors duration-150 disabled:opacity-40 disabled:pointer-events-none
         cursor-pointer select-none ${VARIANT_CLASSES[variant]} ${SIZE_CLASSES[size]} ${className}`}
       onPointerDown={run((e) => {

@@ -1,4 +1,5 @@
 import type { GameResult } from './types'
+import { WORD_BANK } from './wordBank'
 
 export const REACTION_TIME = {
   rounds: 5,
@@ -28,6 +29,33 @@ export const NUMBER_MEMORY = {
   baseDisplayMs: 1800,
   perDigitDisplayMs: 500,
   betweenRoundsMs: 900,
+}
+
+export const CHIMP_TEST = {
+  columns: 6,
+  rows: 5,
+  startTiles: 4,
+  maxLevel: 20,
+  betweenRoundsMs: 900,
+}
+
+export const VISUAL_MEMORY = {
+  gridSize: 5,
+  startTiles: 3,
+  maxLevel: 20,
+  showMs: 2200,
+  betweenRoundsMs: 900,
+}
+
+export const VERBAL_MEMORY = {
+  lives: 3,
+  sequenceLength: 120,
+  repeatProbability: 0.5,
+}
+
+export const TYPING = {
+  wordCount: 40,
+  timeLimitMs: 60_000,
 }
 
 export function generateReactionDelay(): number {
@@ -75,6 +103,72 @@ export function numberDisplayMs(digitCount: number): number {
   return NUMBER_MEMORY.baseDisplayMs + digitCount * NUMBER_MEMORY.perDigitDisplayMs
 }
 
+function shuffledIndices(count: number): number[] {
+  const indices = Array.from({ length: count }, (_, i) => i)
+  for (let i = indices.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[indices[i], indices[j]] = [indices[j], indices[i]]
+  }
+  return indices
+}
+
+/** One chimp-test level: `tilesToShow` distinct cell indices, ordered — `positions[k]` is where number `k + 1` sits. */
+export function generateChimpLevel(tilesToShow: number, cellCount: number = CHIMP_TEST.columns * CHIMP_TEST.rows): number[] {
+  return shuffledIndices(cellCount).slice(0, tilesToShow)
+}
+
+export function generateChimpLevels(maxLevel: number = CHIMP_TEST.maxLevel): number[][] {
+  return Array.from({ length: maxLevel }, (_, i) => generateChimpLevel(CHIMP_TEST.startTiles + i))
+}
+
+/** One visual-memory level: `tilesToShow` distinct cell indices to light up, order doesn't matter. */
+export function generateVisualMemoryLevel(
+  tilesToShow: number,
+  cellCount: number = VISUAL_MEMORY.gridSize * VISUAL_MEMORY.gridSize,
+): number[] {
+  return shuffledIndices(cellCount)
+    .slice(0, tilesToShow)
+    .sort((a, b) => a - b)
+}
+
+export function generateVisualMemoryLevels(maxLevel: number = VISUAL_MEMORY.maxLevel): number[][] {
+  return Array.from({ length: maxLevel }, (_, i) => generateVisualMemoryLevel(VISUAL_MEMORY.startTiles + i))
+}
+
+/** A sequence of words where each is either freshly introduced or a repeat of one already shown — the player judges which. */
+export function generateVerbalMemoryWords(length: number = VERBAL_MEMORY.sequenceLength): string[] {
+  const pool = shuffledIndices(WORD_BANK.length).map((i) => WORD_BANK[i])
+  const seen: string[] = []
+  const out: string[] = []
+  let poolIndex = 0
+  for (let i = 0; i < length; i++) {
+    const canRepeat = seen.length > 0
+    const poolExhausted = poolIndex >= pool.length
+    const shouldRepeat = canRepeat && (poolExhausted || Math.random() < VERBAL_MEMORY.repeatProbability)
+    if (shouldRepeat) {
+      out.push(seen[Math.floor(Math.random() * seen.length)])
+    } else {
+      const word = pool[poolIndex++]
+      out.push(word)
+      seen.push(word)
+    }
+  }
+  return out
+}
+
+export function wasWordSeenBefore(words: string[], index: number): boolean {
+  return words.slice(0, index).includes(words[index])
+}
+
+export function generateTypingPassage(wordCount: number = TYPING.wordCount): string {
+  const indices = shuffledIndices(WORD_BANK.length)
+  const words: string[] = []
+  for (let i = 0; i < wordCount; i++) {
+    words.push(WORD_BANK[indices[i % indices.length]])
+  }
+  return words.join(' ')
+}
+
 export function scoreOf(result: GameResult): number {
   switch (result.gameId) {
     case 'reaction-time':
@@ -85,5 +179,13 @@ export function scoreOf(result: GameResult): number {
       return result.levelReached * 10
     case 'number-memory':
       return result.digitsReached * 10
+    case 'chimp-test':
+      return result.levelReached * 10
+    case 'visual-memory':
+      return result.levelReached * 10
+    case 'verbal-memory':
+      return result.score * 5
+    case 'typing':
+      return result.wpm + Math.round(result.accuracy / 5)
   }
 }

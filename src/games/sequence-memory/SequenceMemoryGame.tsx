@@ -22,6 +22,7 @@ export function SequenceMemoryGame() {
   if (phase === 'result') {
     return (
       <ResultCard
+        gameId="sequence-memory"
         accent="sequence"
         primary={{ value: levelReached, label: 'level reached' }}
         isNewBest={isNewBest}

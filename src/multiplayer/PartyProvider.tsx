@@ -10,6 +10,7 @@ export function PartyProvider({ roomCode, children }: { roomCode: string; childr
   const { profile } = useProfile()
   const [state, setState] = useState<RoomState | null>(null)
   const [connected, setConnected] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const profileRef = useRef(profile)
   profileRef.current = profile
 
@@ -32,6 +33,7 @@ export function PartyProvider({ roomCode, children }: { roomCode: string; childr
       try {
         const message: ServerMessage = JSON.parse(event.data)
         if (message.type === 'state') setState(message.state)
+        else if (message.type === 'error') setError(message.message)
       } catch {
         // ignore malformed messages
       }
@@ -51,5 +53,5 @@ export function PartyProvider({ roomCode, children }: { roomCode: string; childr
     }
   }, [profile.name, profile.clientPlayerId, socket, send])
 
-  return <PartyRoomContext.Provider value={{ state, connected, send }}>{children}</PartyRoomContext.Provider>
+  return <PartyRoomContext.Provider value={{ state, connected, error, send }}>{children}</PartyRoomContext.Provider>
 }

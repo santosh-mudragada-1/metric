@@ -29,7 +29,7 @@ export function DigitDisplay({ answer, input, wasCorrect }: DigitDisplayProps) {
         return (
           <div
             key={i}
-            className={`flex h-14 w-11 items-center justify-center rounded-xl border font-mono text-2xl font-bold tabular-nums
+            className={`flex h-14 w-11 items-center justify-center rounded-full border font-mono text-2xl font-bold tabular-nums
               ${hit ? 'border-success/40 bg-success-dim text-success' : 'border-danger/40 bg-danger-dim text-danger'}`}
           >
             {digit}

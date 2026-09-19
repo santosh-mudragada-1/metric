@@ -1,4 +1,12 @@
-export type GameId = 'reaction-time' | 'aim-trainer' | 'sequence-memory' | 'number-memory'
+export type GameId =
+  | 'reaction-time'
+  | 'aim-trainer'
+  | 'sequence-memory'
+  | 'number-memory'
+  | 'chimp-test'
+  | 'typing'
+  | 'verbal-memory'
+  | 'visual-memory'
 
 export interface ReactionTimeResult {
   gameId: 'reaction-time'
@@ -25,11 +33,36 @@ export interface NumberMemoryResult {
   digitsReached: number
 }
 
+export interface ChimpTestResult {
+  gameId: 'chimp-test'
+  levelReached: number
+}
+
+export interface TypingResult {
+  gameId: 'typing'
+  wpm: number
+  accuracy: number
+}
+
+export interface VerbalMemoryResult {
+  gameId: 'verbal-memory'
+  score: number
+}
+
+export interface VisualMemoryResult {
+  gameId: 'visual-memory'
+  levelReached: number
+}
+
 export type GameResult =
   | ReactionTimeResult
   | AimTrainerResult
   | SequenceMemoryResult
   | NumberMemoryResult
+  | ChimpTestResult
+  | TypingResult
+  | VerbalMemoryResult
+  | VisualMemoryResult
 
 export interface Player {
   id: string
@@ -37,6 +70,7 @@ export interface Player {
   isHost: boolean
   ready: boolean
   connected: boolean
+  eliminated: boolean
 }
 
 export type RoomPhase = 'lobby' | 'countdown' | 'playing' | 'roundResult' | 'finished'
@@ -55,6 +89,9 @@ export interface RoomState {
   players: Player[]
   round: number
   maxRounds: number
+  maxPlayers: number
+  roundTimeLimitMs: number
+  eliminationMode: boolean
   countdownEndsAt?: number
   roundContent?: unknown
   roundResults: Record<string, GameResult>

@@ -3,6 +3,7 @@ import { SEQUENCE_MEMORY } from '@shared/gameConfig'
 import type { SequenceMemoryRoundContent } from '@shared/roundContent'
 import type { SequenceMemoryResult } from '@shared/types'
 import type { SequencePhase } from '@/games/sequence-memory/useSequenceMemorySolo'
+import { playFail, playReveal } from '@/lib/sound/sfx'
 import { usePartyRoom } from '../usePartyRoom'
 
 export function useSequenceMemoryMultiplayer() {
@@ -36,6 +37,7 @@ export function useSequenceMemoryMultiplayer() {
       if (index === expected) {
         const next = userProgress + 1
         setUserProgress(next)
+        playReveal()
         if (next === sequence.length) {
           setLevelReached(sequence.length)
           setPhase('levelUp')
@@ -43,6 +45,7 @@ export function useSequenceMemoryMultiplayer() {
       } else {
         setWrongTileIndex(index)
         setPhase('wrongTile')
+        playFail()
       }
     },
     [phase, sequence, userProgress],

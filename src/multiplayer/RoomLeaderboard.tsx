@@ -1,7 +1,13 @@
 import { useProfile } from '@/hooks/useProfile'
 import type { LeaderboardEntry } from '@shared/types'
 
-export function RoomLeaderboard({ leaderboard, title }: { leaderboard: LeaderboardEntry[]; title?: string }) {
+interface RoomLeaderboardProps {
+  leaderboard: LeaderboardEntry[]
+  title?: string
+  eliminatedIds?: Set<string>
+}
+
+export function RoomLeaderboard({ leaderboard, title, eliminatedIds }: RoomLeaderboardProps) {
   const { profile } = useProfile()
 
   return (
@@ -13,10 +19,11 @@ export function RoomLeaderboard({ leaderboard, title }: { leaderboard: Leaderboa
         {leaderboard.map((entry, i) => {
           const isMe = entry.playerId === profile.clientPlayerId
           const isFirst = i === 0
+          const isEliminated = eliminatedIds?.has(entry.playerId) ?? false
           return (
             <div
               key={entry.playerId}
-              className={`flex items-center gap-4 py-3.5 ${isMe ? 'text-text' : 'text-text-muted'}`}
+              className={`flex items-center gap-4 py-3.5 ${isEliminated ? 'opacity-40' : isMe ? 'text-text' : 'text-text-muted'}`}
             >
               <span
                 className={`w-7 shrink-0 font-mono text-lg font-semibold tabular-nums
@@ -28,6 +35,11 @@ export function RoomLeaderboard({ leaderboard, title }: { leaderboard: Leaderboa
                 {entry.name}
                 {isMe && <span className="ml-2 text-xs text-text-dim">(you)</span>}
               </span>
+              {isEliminated && (
+                <span className="shrink-0 font-mono text-[0.6875rem] tracking-[0.1em] text-danger uppercase">
+                  eliminated
+                </span>
+              )}
               <span className="shrink-0 font-mono text-lg font-semibold tabular-nums text-text">
                 {entry.totalScore}
                 <span className="ml-1 text-xs font-normal text-text-dim">pts</span>

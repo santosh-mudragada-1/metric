@@ -26,6 +26,7 @@ export function AimTrainerGame() {
   if (phase === 'result') {
     return (
       <ResultCard
+        gameId="aim-trainer"
         accent="aim"
         primary={{ value: accuracy, unit: '%', label: 'accuracy' }}
         isNewBest={isNewBest}

@@ -76,3 +76,41 @@ export function playCopy(): void {
     tone({ freq: 1600, type: 'sine', duration: 0.05, peakGain: 0.2, delay: 0.04 })
   })
 }
+
+export function playHeadingHover(): void {
+  guarded(() => tone({ freq: 380, type: 'sine', duration: 0.12, peakGain: 0.06, release: 0.18 }))
+}
+
+const HEADING_BASE_FREQ = 520
+const HEADING_SEMITONE = Math.pow(2, 1 / 12)
+// Major pentatonic scale steps — keeps the letter-to-letter glide pleasant regardless of index.
+const HEADING_SCALE_STEPS = [0, 2, 4, 7, 9]
+
+export function playHeadingTick(index: number): void {
+  guarded(() => {
+    const step = HEADING_SCALE_STEPS[index % HEADING_SCALE_STEPS.length]
+    const octave = Math.floor(index / HEADING_SCALE_STEPS.length) % 2
+    const freq = HEADING_BASE_FREQ * Math.pow(HEADING_SEMITONE, step + octave * 12)
+    tone({ freq, type: 'sine', duration: 0.03, peakGain: 0.05, release: 0.04 })
+  })
+}
+
+export function playBack(): void {
+  guarded(() => glide(700, 420, { type: 'sine', duration: 0.09, peakGain: 0.3, release: 0.06 }))
+}
+
+// A fast ascending shimmer + high sparkle overtone — pairs with the spinning rainbow-glow CTA.
+const RAINBOW_STEPS = [0, 3, 5, 8, 10, 12]
+const RAINBOW_BASE_FREQ = 640
+const RAINBOW_SEMITONE = Math.pow(2, 1 / 12)
+
+export function playRainbowHover(): void {
+  guarded(() => {
+    RAINBOW_STEPS.forEach((step, i) => {
+      const freq = RAINBOW_BASE_FREQ * Math.pow(RAINBOW_SEMITONE, step)
+      tone({ freq, type: 'sine', duration: 0.05, peakGain: 0.18 - i * 0.014, release: 0.06, delay: i * 0.016 })
+    })
+    tone({ freq: RAINBOW_BASE_FREQ * 4, type: 'triangle', duration: 0.09, peakGain: 0.1, release: 0.14, delay: 0.02 })
+    noiseBurst({ duration: 0.07, filterFreq: 7000, filterType: 'highpass', peakGain: 0.06 })
+  })
+}

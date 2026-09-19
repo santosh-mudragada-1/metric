@@ -70,7 +70,7 @@ export function SequenceMemoryBoard({
 
   if (phase === 'idle') {
     return (
-      <div className="relative flex h-[65vh] min-h-96 max-h-[38rem] flex-col items-center justify-center gap-4 overflow-hidden rounded-xl border border-border bg-surface p-6 text-center">
+      <div className="relative flex h-[65vh] min-h-96 max-h-[38rem] flex-col items-center justify-center gap-4 overflow-hidden rounded-panel border border-border bg-surface p-6 text-center">
         <div className="absolute top-5 left-5 flex items-center gap-2 sm:top-7 sm:left-7">
           <span className="h-2 w-2 rounded-full bg-text-dim" />
           <span className="font-mono text-[0.6875rem] tracking-[0.14em] text-text-dim uppercase">standby</span>
@@ -92,7 +92,7 @@ export function SequenceMemoryBoard({
   const inputLocked = phase !== 'input'
 
   return (
-    <div className="relative flex h-[65vh] min-h-96 max-h-[38rem] flex-col items-center justify-center gap-8 overflow-hidden rounded-xl border border-border bg-surface">
+    <div className="relative flex h-[65vh] min-h-96 max-h-[38rem] flex-col items-center justify-center gap-8 overflow-hidden rounded-panel border border-border bg-surface">
       <div className="absolute top-5 left-5 flex items-center gap-2 sm:top-7 sm:left-7">
         <span
           className={`h-2 w-2 rounded-full ${phase === 'wrongTile' ? 'bg-danger' : 'bg-accent-sequence live-loop shadow-[0_0_10px_1px_var(--color-accent-sequence)]'}`}
@@ -103,11 +103,11 @@ export function SequenceMemoryBoard({
         level {String(sequence.length).padStart(2, '0')}
       </div>
 
-      {phase === 'input' && (
-        <p className="font-mono text-xs tracking-[0.14em] text-text-dim uppercase tabular-nums">
-          {userProgress} / {sequence.length}
-        </p>
-      )}
+      <p
+        className={`font-mono text-xs tracking-[0.14em] text-text-dim uppercase tabular-nums ${phase === 'input' ? '' : 'invisible'}`}
+      >
+        {userProgress} / {sequence.length}
+      </p>
 
       <div ref={gridRef} className="grid w-72 grid-cols-3 gap-3 sm:w-96 sm:gap-4">
         {Array.from({ length: SEQUENCE_MEMORY.gridSize }).map((_, i) => (

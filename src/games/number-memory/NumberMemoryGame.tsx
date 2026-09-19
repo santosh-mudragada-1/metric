@@ -23,6 +23,7 @@ export function NumberMemoryGame() {
   if (phase === 'result') {
     return (
       <ResultCard
+        gameId="number-memory"
         accent="number"
         primary={{ value: digitsReached, label: 'digits recalled' }}
         isNewBest={isNewBest}

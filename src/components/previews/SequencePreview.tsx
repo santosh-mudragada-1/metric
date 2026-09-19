@@ -6,7 +6,7 @@ export function SequencePreview() {
       {DELAYS.map((delay, i) => (
         <div
           key={i}
-          className="live-loop rounded-[2px] bg-accent-sequence"
+          className="live-loop rounded-full bg-accent-sequence"
           style={{ animation: `sequence-blink 2.4s ease-in-out ${delay} infinite` }}
         />
       ))}

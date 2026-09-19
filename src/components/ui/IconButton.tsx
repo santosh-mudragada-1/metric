@@ -1,7 +1,7 @@
 import { type ButtonHTMLAttributes, forwardRef } from 'react'
 import { useAnimation } from '@/hooks/useAnimation'
 import { hoverIn, hoverOut, pressDown, pressUp } from '@/lib/animation/presets'
-import { playClick } from '@/lib/sound/sfx'
+import { playClick, playHover } from '@/lib/sound/sfx'
 
 interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   label: string
@@ -9,7 +9,7 @@ interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(function IconButton(
-  { label, silent, className = '', onClick, ...props },
+  { label, silent, className = '', onClick, onMouseEnter, ...props },
   forwardedRef,
 ) {
   const { scope, run } = useAnimation<HTMLButtonElement>()
@@ -28,7 +28,11 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
       onPointerDown={run(() => pressDown(scope.current))}
       onPointerUp={run(() => pressUp(scope.current))}
       onPointerLeave={run(() => pressUp(scope.current))}
-      onMouseEnter={run(() => hoverIn(scope.current))}
+      onMouseEnter={run((e) => {
+        hoverIn(scope.current)
+        if (!silent) playHover()
+        onMouseEnter?.(e)
+      })}
       onMouseLeave={run(() => hoverOut(scope.current))}
       onClick={(e) => {
         if (!silent) playClick()

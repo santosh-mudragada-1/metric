@@ -6,6 +6,10 @@ const DOT_CLASSES: Record<GameConfig['accent'], string> = {
   aim: 'bg-accent-aim',
   sequence: 'bg-accent-sequence',
   number: 'bg-accent-number',
+  chimp: 'bg-accent-chimp',
+  visual: 'bg-accent-visual',
+  verbal: 'bg-accent-verbal',
+  typing: 'bg-accent-typing',
 }
 
 interface GamePickerProps {

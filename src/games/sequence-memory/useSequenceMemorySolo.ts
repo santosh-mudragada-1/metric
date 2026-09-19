@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { SEQUENCE_MEMORY, extendSequence, generateSequence } from '@shared/gameConfig'
 import { useLocalBest } from '@/hooks/useLocalBest'
+import { playFail, playReveal } from '@/lib/sound/sfx'
 
 export type SequencePhase = 'idle' | 'countdown' | 'showing' | 'input' | 'wrongTile' | 'levelUp' | 'result'
 
@@ -34,6 +35,7 @@ export function useSequenceMemorySolo() {
       if (index === expected) {
         const next = userProgress + 1
         setUserProgress(next)
+        playReveal()
         if (next === sequence.length) {
           setLevelReached(sequence.length)
           setPhase('levelUp')
@@ -41,6 +43,7 @@ export function useSequenceMemorySolo() {
       } else {
         setWrongTileIndex(index)
         setPhase('wrongTile')
+        playFail()
       }
     },
     [phase, sequence, userProgress],

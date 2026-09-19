@@ -63,7 +63,7 @@ export function ReactionTimeBoard({ phase, round, totalRounds, lastMs, onStart, 
       ref={boardRef}
       onClick={handleClick}
       className={`relative flex h-[65vh] min-h-96 max-h-[38rem] select-none flex-col items-center justify-center
-        gap-4 overflow-hidden rounded-xl border border-border text-center transition-[background-color]
+        gap-4 overflow-hidden rounded-panel border border-border text-center transition-[background-color]
         duration-0 cursor-pointer ${PHASE_STYLES[phase]}`}
     >
       <div className="absolute top-5 left-5 flex items-center gap-2 sm:top-7 sm:left-7">

@@ -46,7 +46,7 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
         ref={panelRef}
         role="dialog"
         aria-modal="true"
-        className="relative w-full max-w-md rounded-xl border border-border-strong bg-surface-raised p-6 shadow-[var(--shadow-card)]"
+        className="relative w-full max-w-md rounded-panel border border-border-strong bg-surface-raised p-6 shadow-[var(--shadow-card)]"
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-display text-lg font-semibold text-text">{title}</h2>
