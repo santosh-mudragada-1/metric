@@ -1,12 +1,19 @@
 import { BoltIcon, HashtagIcon, Squares2X2Icon, ViewfinderCircleIcon } from '@heroicons/react/24/outline'
 import type { GameId } from '@shared/types'
 import type { ComponentType, SVGProps } from 'react'
+import { ReactionPreview } from '@/components/previews/ReactionPreview'
+import { AimPreview } from '@/components/previews/AimPreview'
+import { SequencePreview } from '@/components/previews/SequencePreview'
+import { NumberPreview } from '@/components/previews/NumberPreview'
 
 export interface GameConfig {
   id: GameId
   name: string
+  /** Lowercase, editorial fragment used as supporting copy — not a marketing tagline. */
   blurb: string
   Icon: ComponentType<SVGProps<SVGSVGElement>>
+  /** Small looping visual that gives the game life in the index — not a static icon. */
+  Preview: ComponentType
   accent: 'reaction' | 'aim' | 'sequence' | 'number'
 }
 
@@ -14,29 +21,33 @@ export const GAMES: GameConfig[] = [
   {
     id: 'reaction-time',
     name: 'Reaction Time',
-    blurb: 'Click the instant the screen turns green.',
+    blurb: 'Wait for green. Click.',
     Icon: BoltIcon,
+    Preview: ReactionPreview,
     accent: 'reaction',
   },
   {
     id: 'aim-trainer',
     name: 'Aim Trainer',
-    blurb: 'Hit 30 targets as fast as you can.',
+    blurb: 'Hit all 30 targets.',
     Icon: ViewfinderCircleIcon,
+    Preview: AimPreview,
     accent: 'aim',
   },
   {
     id: 'sequence-memory',
     name: 'Sequence Memory',
-    blurb: 'Repeat the growing pattern of tiles.',
+    blurb: 'Repeat the pattern.',
     Icon: Squares2X2Icon,
+    Preview: SequencePreview,
     accent: 'sequence',
   },
   {
     id: 'number-memory',
     name: 'Number Memory',
-    blurb: 'Memorize the number before it disappears.',
+    blurb: 'Remember the number.',
     Icon: HashtagIcon,
+    Preview: NumberPreview,
     accent: 'number',
   },
 ]

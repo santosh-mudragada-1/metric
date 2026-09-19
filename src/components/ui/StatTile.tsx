@@ -12,12 +12,12 @@ export function StatTile({ label, value, accent, icon: Icon }: StatTileProps) {
   const classes = accent ? ACCENT_CLASSES[accent] : null
 
   return (
-    <div className="flex flex-col gap-1 rounded-xl border border-border bg-surface-raised px-4 py-3">
-      <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-text-dim">
-        {Icon && <Icon className="h-3.5 w-3.5" />}
+    <div className="flex flex-col gap-1.5 border-t border-border-strong pt-3 text-left">
+      <span className="flex items-center gap-1.5 font-mono text-[0.6875rem] font-medium uppercase tracking-[0.14em] text-text-dim">
+        {Icon && <Icon className="h-3 w-3" />}
         {label}
       </span>
-      <span className={`font-mono text-2xl font-semibold tabular-nums ${classes ? classes.text : 'text-text'}`}>
+      <span className={`font-mono text-3xl font-semibold tabular-nums ${classes ? classes.text : 'text-text'}`}>
         {value}
       </span>
     </div>

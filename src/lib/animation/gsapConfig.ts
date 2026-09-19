@@ -20,6 +20,8 @@ export const DURATION = {
   fast: 0.12,
   base: 0.22,
   slow: 0.42,
+  /** Route/mode transitions only — dashboard ↔ game, never a hover or press. */
+  transition: 0.6,
 } as const
 
 let reducedMotionQuery: gsap.MatchMedia | null = null

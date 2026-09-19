@@ -6,12 +6,23 @@
   --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Consolas, monospace;
 
+  /* Fluid display sizes — typography carries the hierarchy instead of card chrome */
+  --text-hero: clamp(3.25rem, 2.2rem + 6vw, 8rem);
+  --text-hero--line-height: 0.88;
+  --text-hero--letter-spacing: -0.03em;
+  --text-display: clamp(2.25rem, 1.7rem + 3vw, 4.25rem);
+  --text-display--line-height: 0.94;
+  --text-display--letter-spacing: -0.025em;
+  --text-readout: clamp(3.5rem, 2.5rem + 6vw, 7rem);
+  --text-readout--line-height: 0.92;
+  --text-readout--letter-spacing: -0.02em;
+
   /* Chrome — true-black instrument-panel neutrals, no color cast */
-  --color-base: #050506;
+  --color-base: #08080a;
   --color-surface: #131316;
   --color-surface-raised: #1c1c1f;
   --color-surface-hover: #232327;
-  --color-border: #2a2a2e;
+  --color-border: #26262b;
   --color-border-strong: #3a3a3f;
 
   --color-text: #f5f5f2;
@@ -19,10 +30,14 @@
   --color-text-dim: #5c5c62;
 
   /* Ink / chalk — the only colors system chrome & buttons use */
-  --color-ink: #050506;
+  --color-ink: #08080a;
   --color-chalk: #f5f5f2;
 
-  /* Per-game accents — the ONLY place color appears; each is a game's identity signal */
+  /* Signal — the single system-level accent, used sparingly: live state, records, focus */
+  --color-signal: #ff5a1f;
+  --color-signal-dim: #ff5a1f1f;
+
+  /* Per-game accents — the ONLY other place color appears; each is a game's identity signal */
   --color-accent-reaction: #ff4d3d;
   --color-accent-reaction-dim: #ff4d3d1f;
   --color-accent-aim: #17b8ac;
@@ -39,6 +54,7 @@
 
   --shadow-card: 0 1px 0 0 #ffffff0a inset, 0 20px 40px -20px #00000090;
   --shadow-chalk: 0 8px 24px -10px #f5f5f259;
+  --shadow-signal: 0 8px 28px -8px #ff5a1f66;
 }
 
 @layer base {
@@ -52,7 +68,10 @@
 
   body {
     margin: 0;
-    background: var(--color-base);
+    background:
+      radial-gradient(ellipse 140% 90% at 50% -10%, #ffffff08, transparent 60%),
+      var(--color-base);
+    background-attachment: fixed;
     color: var(--color-text);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
@@ -68,5 +87,111 @@
   ::selection {
     background: var(--color-chalk);
     color: var(--color-ink);
+  }
+
+  input[type='range'] {
+    accent-color: var(--color-chalk);
+  }
+}
+
+@layer components {
+  /* Faint instrument-panel ruling — a texture, not a gradient. Opt-in per element. */
+  .grid-texture {
+    background-image:
+      linear-gradient(to right, #ffffff08 1px, transparent 1px),
+      linear-gradient(to bottom, #ffffff08 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+
+  .tick-texture {
+    background-image: repeating-linear-gradient(to right, #ffffff12 0 1px, transparent 1px 8px);
+    background-position: bottom;
+    background-size: 100% 1px;
+    background-repeat: no-repeat;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-loop {
+    animation-play-state: paused !important;
+  }
+}
+
+@keyframes reaction-pulse {
+  0%,
+  100% {
+    transform: scale(0.68);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes aim-jump {
+  0%,
+  15% {
+    top: 20%;
+    left: 24%;
+  }
+  20%,
+  35% {
+    top: 68%;
+    left: 72%;
+  }
+  40%,
+  55% {
+    top: 72%;
+    left: 22%;
+  }
+  60%,
+  75% {
+    top: 18%;
+    left: 66%;
+  }
+  80%,
+  95% {
+    top: 45%;
+    left: 46%;
+  }
+  100% {
+    top: 20%;
+    left: 24%;
+  }
+}
+
+@keyframes sequence-blink {
+  0%,
+  100% {
+    opacity: 0.22;
+    transform: scale(0.92);
+  }
+  8%,
+  18% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes number-tick {
+  0%,
+  22% {
+    transform: translateY(0%);
+  }
+  28%,
+  47% {
+    transform: translateY(-25%);
+  }
+  53%,
+  72% {
+    transform: translateY(-50%);
+  }
+  78%,
+  97% {
+    transform: translateY(-75%);
+  }
+  100% {
+    transform: translateY(0%);
   }
 }

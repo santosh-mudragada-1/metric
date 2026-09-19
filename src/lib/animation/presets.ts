@@ -86,6 +86,39 @@ export function staggerReveal(
   return tl
 }
 
+/** Animates the text content of `target` from `from` to `to` as a tabular-nums count-up. */
+export function countUp(
+  target: Target,
+  opts: { from?: number; to: number; duration?: number; suffix?: string; onDone?: () => void },
+) {
+  const { from = 0, to, duration = DURATION.slow, suffix = '', onDone } = opts
+  const proxy = { value: from }
+  return gsap.to(proxy, {
+    value: to,
+    duration,
+    ease: EASE.snap,
+    onUpdate: () => {
+      const el = (Array.isArray(target) ? target[0] : target) as HTMLElement | null
+      if (el) el.textContent = `${Math.round(proxy.value)}${suffix}`
+    },
+    onComplete: onDone,
+  })
+}
+
+/** Dashboard content exiting toward a selected game — pairs with `enterMode`. */
+export function exitToMode(target: Target) {
+  return gsap.to(target, { opacity: 0, y: -16, scale: 0.98, duration: DURATION.base, ease: EASE.in })
+}
+
+/** Game surface arriving after a mode transition. */
+export function enterMode(target: Target) {
+  return gsap.fromTo(
+    target,
+    { opacity: 0, y: 20, scale: 0.98 },
+    { opacity: 1, y: 0, scale: 1, duration: DURATION.transition, ease: EASE.out },
+  )
+}
+
 export function pulseGlow(target: Target) {
   const tl = gsap.timeline()
   tl.to(target, { filter: 'brightness(1.5)', duration: DURATION.fast, ease: EASE.out }).to(target, {

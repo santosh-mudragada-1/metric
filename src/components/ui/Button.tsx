@@ -17,13 +17,13 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const VARIANT_CLASSES: Record<Variant, string> = {
   primary: 'bg-chalk text-ink shadow-[var(--shadow-chalk)] hover:bg-white',
-  ghost: 'bg-transparent text-text border border-border-strong hover:bg-surface-hover',
+  ghost: 'bg-transparent text-text border border-border-strong hover:border-text-muted hover:bg-surface-hover',
   danger: 'bg-danger-dim text-danger border border-danger/40 hover:bg-danger/20',
 }
 
 const SIZE_CLASSES: Record<Size, string> = {
-  md: 'h-10 px-5 text-sm gap-1.5',
-  lg: 'h-12 px-6 text-base gap-2',
+  md: 'h-10 px-5 text-sm gap-1.5 tracking-tight',
+  lg: 'h-13 px-7 text-base gap-2 tracking-tight',
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
@@ -39,7 +39,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
         if (typeof forwardedRef === 'function') forwardedRef(node)
         else if (forwardedRef) forwardedRef.current = node
       }}
-      className={`inline-flex items-center justify-center rounded-full font-medium
+      className={`inline-flex items-center justify-center rounded-lg font-medium font-display
         transition-colors duration-150 disabled:opacity-40 disabled:pointer-events-none
         cursor-pointer select-none ${VARIANT_CLASSES[variant]} ${SIZE_CLASSES[size]} ${className}`}
       onPointerDown={run((e) => {

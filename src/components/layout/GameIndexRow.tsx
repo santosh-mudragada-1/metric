@@ -1,0 +1,78 @@
+import { useNavigate } from 'react-router'
+import { ArrowUpRightIcon } from '@heroicons/react/24/outline'
+import { playClick } from '@/lib/sound/sfx'
+import { useLocalBest } from '@/hooks/useLocalBest'
+import type { GameConfig } from '@/games.config'
+import type { Bests } from '@/lib/storage'
+
+const ACCENT_TEXT: Record<GameConfig['accent'], string> = {
+  reaction: 'group-hover:text-accent-reaction',
+  aim: 'group-hover:text-accent-aim',
+  sequence: 'group-hover:text-accent-sequence',
+  number: 'group-hover:text-accent-number',
+}
+
+function formatBest(game: GameConfig, best: Bests[keyof Bests]): string | null {
+  if (!best) return null
+  switch (game.id) {
+    case 'reaction-time':
+      return 'bestMs' in best ? `${best.bestMs} ms best` : null
+    case 'aim-trainer':
+      return 'bestHits' in best ? `${best.bestHits} hits best` : null
+    case 'sequence-memory':
+      return 'bestLevel' in best ? `level ${best.bestLevel} best` : null
+    case 'number-memory':
+      return 'bestDigits' in best ? `${best.bestDigits} digits best` : null
+    default:
+      return null
+  }
+}
+
+export function GameIndexRow({ game, index }: { game: GameConfig; index: number }) {
+  const navigate = useNavigate()
+  const { best } = useLocalBest(game.id)
+  const bestLabel = formatBest(game, best)
+  const Preview = game.Preview
+
+  const go = () => {
+    playClick()
+    navigate(`/play/${game.id}`)
+  }
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={go}
+      onKeyDown={(e) => e.key === 'Enter' && go()}
+      className="group grid cursor-pointer grid-cols-[2.25rem_1fr_auto] items-center gap-4 border-t border-border
+        py-5 outline-none transition-[transform,background-color] duration-200 last:border-b hover:translate-x-1
+        active:translate-x-1 active:scale-[0.995] focus-visible:bg-surface-hover sm:grid-cols-[3.25rem_1fr_auto_auto]
+        sm:gap-6 sm:py-8"
+    >
+      <span className="font-mono text-sm tabular-nums text-text-dim transition-colors group-hover:text-text-muted sm:text-base">
+        {String(index).padStart(2, '0')}
+      </span>
+
+      <div className="min-w-0">
+        <h3
+          className={`truncate font-display text-3xl font-semibold lowercase tracking-tight text-text transition-colors duration-200 sm:text-6xl ${ACCENT_TEXT[game.accent]}`}
+        >
+          {game.name}
+        </h3>
+        <p className="mt-1 truncate text-sm text-text-muted sm:text-base">{game.blurb}</p>
+      </div>
+
+      <div className="hidden h-11 w-11 shrink-0 items-center justify-center opacity-60 transition-opacity duration-200 group-hover:opacity-100 sm:flex">
+        <Preview />
+      </div>
+
+      <div className="flex shrink-0 flex-col items-end gap-2">
+        {bestLabel && (
+          <span className="font-mono text-xs tabular-nums whitespace-nowrap text-text-dim sm:text-sm">{bestLabel}</span>
+        )}
+        <ArrowUpRightIcon className="h-4 w-4 text-text-dim transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-text sm:h-5 sm:w-5" />
+      </div>
+    </div>
+  )
+}

@@ -13,14 +13,14 @@ export function PageHeader({ title, subtitle, action }: PageHeaderProps) {
   const navigate = useNavigate()
 
   return (
-    <div className="mb-6 flex items-center justify-between gap-4">
-      <div className="flex items-center gap-3">
-        <IconButton label="Back" silent onClick={() => navigate('/')}>
-          <ArrowLeftIcon className="h-5 w-5" />
+    <div className="mb-8 flex items-start justify-between gap-4 pt-4 sm:mb-12 sm:pt-6">
+      <div className="flex items-start gap-4 sm:gap-5">
+        <IconButton label="Back to dashboard" silent onClick={() => navigate('/')} className="mt-2 shrink-0">
+          <ArrowLeftIcon className="h-4 w-4" />
         </IconButton>
-        <div>
-          <h1 className="font-display text-xl font-semibold tracking-tight text-text">{title}</h1>
-          {subtitle && <p className="text-sm text-text-muted">{subtitle}</p>}
+        <div className="min-w-0">
+          <h1 className="text-display font-display font-semibold tracking-tight text-text">{title}</h1>
+          {subtitle && <p className="mt-2 text-sm text-text-muted sm:text-base">{subtitle}</p>}
         </div>
       </div>
       {action}

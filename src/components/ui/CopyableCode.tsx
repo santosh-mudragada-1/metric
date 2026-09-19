@@ -31,7 +31,7 @@ export function CopyableCode({ value, displayValue }: CopyableCodeProps) {
     <button
       ref={scope}
       onClick={copy}
-      className="group inline-flex cursor-pointer items-center gap-3 rounded-full border border-border-strong
+      className="group inline-flex cursor-pointer items-center gap-3 rounded-lg border border-border-strong
         bg-surface-raised px-5 py-3 font-mono text-xl font-semibold tracking-[0.3em] text-text
         transition-colors hover:bg-surface-hover"
     >
