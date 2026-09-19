@@ -51,7 +51,11 @@ function RoomContent({ roomCode }: { roomCode: string }) {
   }, [state, profile.clientPlayerId, searchParams, send])
 
   if (!connected || !state) {
-    return <div className="flex h-96 items-center justify-center text-text-muted">Connecting to room...</div>
+    return (
+      <div className="flex h-96 items-center justify-center font-mono text-sm tracking-[0.1em] text-text-dim uppercase">
+        connecting to room...
+      </div>
+    )
   }
 
   const me = state.players.find((p) => p.id === profile.clientPlayerId)
@@ -75,24 +79,24 @@ function RoomContent({ roomCode }: { roomCode: string }) {
       {state.phase === 'playing' && <GameSwitch gameId={state.gameId} />}
 
       {state.phase === 'roundResult' && (
-        <div className="flex flex-col items-center gap-4">
+        <div className="flex flex-col items-center gap-8 py-6">
           <RoomLeaderboard leaderboard={state.leaderboard} title={`Standings after round ${state.round}`} />
           {isHost ? (
             <Button variant="primary" chevron onClick={() => send({ type: 'hostStartRound' })}>
-              {state.round >= state.maxRounds ? 'See Final Results' : 'Next Round'}
+              {state.round >= state.maxRounds ? 'See final results' : 'Next round'}
             </Button>
           ) : (
-            <p className="font-mono text-sm text-text-muted">waiting for host to continue...</p>
+            <p className="font-mono text-xs tracking-[0.1em] text-text-dim uppercase">waiting for host to continue...</p>
           )}
         </div>
       )}
 
       {state.phase === 'finished' && (
-        <div className="flex flex-col items-center gap-4">
-          <RoomLeaderboard leaderboard={state.leaderboard} title="Final Results" />
+        <div className="flex flex-col items-center gap-8 py-6">
+          <RoomLeaderboard leaderboard={state.leaderboard} title="Final results" />
           {isHost && (
             <Button variant="primary" chevron onClick={() => send({ type: 'hostStartRound' })}>
-              Play Again
+              Play again
             </Button>
           )}
         </div>

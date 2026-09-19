@@ -1,9 +1,9 @@
 import { CheckCircleIcon, StarIcon } from '@heroicons/react/24/solid'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { Badge } from '@/components/ui/Badge'
 import { CopyableCode } from '@/components/ui/CopyableCode'
-import { GAMES, GAME_MAP } from '@/games.config'
+import { GamePicker } from '@/multiplayer/GamePicker'
+import { GAME_MAP } from '@/games.config'
 import { useProfile } from '@/hooks/useProfile'
 import { usePartyRoom } from './usePartyRoom'
 
@@ -19,30 +19,33 @@ export function RoomLobby() {
   const game = GAME_MAP[state.gameId]
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-      <Card className="flex flex-col gap-4 p-6">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+      <Card className="flex flex-col gap-5 p-6 sm:p-7">
         <div className="flex items-center justify-between">
-          <h2 className="font-display font-semibold tracking-tight text-text">Room {state.code.toUpperCase()}</h2>
+          <h2 className="font-mono text-xs tracking-[0.14em] text-text-dim uppercase">
+            Room <span className="text-text">{state.code.toUpperCase()}</span>
+          </h2>
           <CopyableCode value={state.code} displayValue={state.code.toUpperCase()} />
         </div>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col divide-y divide-border border-y border-border">
           {state.players.map((player) => (
             <div
               key={player.id}
-              className={`flex items-center justify-between rounded-2xl border border-border px-3 py-2 ${
-                player.connected ? 'bg-surface-raised' : 'bg-surface-raised/40 opacity-50'
-              }`}
+              className={`flex items-center justify-between gap-3 py-3 ${player.connected ? '' : 'opacity-40'}`}
             >
-              <div className="flex items-center gap-2">
-                {player.isHost && <StarIcon className="h-4 w-4 text-accent-number" />}
-                <span className="text-sm text-text">{player.name}</span>
-                {player.id === profile.clientPlayerId && <span className="text-xs text-text-dim">(you)</span>}
+              <div className="flex min-w-0 items-center gap-2.5">
+                <span className={`h-2 w-2 shrink-0 rounded-full ${player.ready ? 'bg-success' : 'bg-text-dim'}`} />
+                {player.isHost && <StarIcon className="h-3.5 w-3.5 shrink-0 text-accent-number" />}
+                <span className="truncate font-display text-base font-medium text-text">{player.name}</span>
+                {player.id === profile.clientPlayerId && <span className="shrink-0 text-xs text-text-dim">(you)</span>}
               </div>
               {player.ready ? (
-                <CheckCircleIcon className="h-5 w-5 text-success" />
+                <CheckCircleIcon className="h-4 w-4 shrink-0 text-success" />
               ) : (
-                <span className="text-xs text-text-dim">not ready</span>
+                <span className="shrink-0 font-mono text-[0.6875rem] tracking-[0.1em] text-text-dim uppercase">
+                  not ready
+                </span>
               )}
             </div>
           ))}
@@ -52,40 +55,33 @@ export function RoomLobby() {
           variant={me?.ready ? 'ghost' : 'primary'}
           onClick={() => send({ type: 'setReady', ready: !me?.ready })}
         >
-          {me?.ready ? 'Not Ready' : "I'm Ready"}
+          {me?.ready ? 'Not ready' : "I'm ready"}
         </Button>
       </Card>
 
-      <Card className="flex flex-col gap-4 p-6">
-        <h2 className="font-display font-semibold tracking-tight text-text">Game Settings</h2>
+      <Card className="flex flex-col gap-5 p-6 sm:p-7">
+        <h2 className="font-display text-lg font-semibold lowercase tracking-tight text-text">game settings</h2>
 
         {isHost ? (
           <>
             <div>
-              <label className="mb-2 block text-sm font-medium text-text-muted">Game</label>
-              <div className="grid grid-cols-2 gap-2">
-                {GAMES.map((g) => (
-                  <button
-                    key={g.id}
-                    onClick={() => send({ type: 'hostChangeGame', gameId: g.id })}
-                    className={`flex cursor-pointer items-center gap-2 rounded-2xl border p-2.5 text-left text-sm
-                      ${state.gameId === g.id ? 'border-chalk/60 bg-surface-hover' : 'border-border bg-surface-raised hover:bg-surface-hover'}`}
-                  >
-                    <Badge Icon={g.Icon} accent={g.accent} />
-                    <span className="text-text">{g.name}</span>
-                  </button>
-                ))}
-              </div>
+              <label className="mb-2 block font-mono text-[0.6875rem] tracking-[0.14em] text-text-dim uppercase">
+                Game
+              </label>
+              <GamePicker value={state.gameId} onChange={(gameId) => send({ type: 'hostChangeGame', gameId })} />
             </div>
             <div>
-              <label className="mb-2 block text-sm font-medium text-text-muted">Rounds: {state.maxRounds}</label>
+              <div className="mb-2 flex items-baseline justify-between">
+                <label className="font-mono text-[0.6875rem] tracking-[0.14em] text-text-dim uppercase">Rounds</label>
+                <span className="font-mono text-sm tabular-nums text-text">{String(state.maxRounds).padStart(2, '0')}</span>
+              </div>
               <input
                 type="range"
                 min={1}
                 max={10}
                 value={state.maxRounds}
                 onChange={(e) => send({ type: 'hostSetRounds', maxRounds: Number(e.target.value) })}
-                className="w-full accent-chalk"
+                className="w-full"
               />
             </div>
             <Button
@@ -95,14 +91,15 @@ export function RoomLobby() {
               onClick={() => send({ type: 'hostStartRound' })}
               className="mt-auto"
             >
-              {allReady ? 'Start Game' : 'Waiting for everyone to be ready'}
+              {allReady ? 'Start game' : 'Waiting for everyone to be ready'}
             </Button>
           </>
         ) : (
-          <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center text-text-muted">
-            <Badge Icon={game.Icon} accent={game.accent} size="lg" />
-            <p className="mt-2 font-medium text-text">{game.name}</p>
-            <p className="text-sm">{state.maxRounds} rounds — waiting for the host to start</p>
+          <div className="flex flex-1 flex-col items-center justify-center gap-2 py-8 text-center text-text-muted">
+            <p className="font-display text-2xl font-semibold lowercase tracking-tight text-text">{game.name}</p>
+            <p className="font-mono text-xs tracking-[0.1em] text-text-dim uppercase">
+              {state.maxRounds} rounds — waiting for the host to start
+            </p>
           </div>
         )}
       </Card>
