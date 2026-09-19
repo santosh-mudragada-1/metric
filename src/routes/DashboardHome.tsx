@@ -27,12 +27,12 @@ export default function DashboardHome() {
     <div className="flex flex-col pt-10 sm:pt-16">
       <section className="flex flex-col gap-8 sm:gap-10">
         <span className="font-mono text-xs font-medium tracking-[0.18em] text-text-dim uppercase sm:text-sm">
-          Metric — eight tests
+          Metric · eight tests
         </span>
 
         <AnimatedHeading
           as="h1"
-          text={'know your\nnumbers.'}
+          text={'measure your\nmind.'}
           className="max-w-3xl font-display text-hero font-semibold text-text"
           radius={220}
           hoverWeight={900}
@@ -40,8 +40,7 @@ export default function DashboardHome() {
 
         <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between">
           <p className="max-w-sm text-base leading-relaxed text-text-muted">
-            Reaction, aim, memory, and recall — measured in milliseconds and words per minute. Beat your best, or
-            challenge a friend live.
+            Reaction, aim, memory, and recall. Measured in milliseconds, accuracy, and speed.
           </p>
           <button
             ref={scope}
@@ -57,7 +56,7 @@ export default function DashboardHome() {
             className="group rainbow-cta relative inline-flex shrink-0 cursor-pointer items-center gap-3 rounded-full
               bg-invert px-7 py-4 font-display text-base font-semibold text-on-invert shadow-[var(--shadow-invert)]"
           >
-            Play random test
+            Play a random test
             <ArrowRightIcon className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
           </button>
         </div>
