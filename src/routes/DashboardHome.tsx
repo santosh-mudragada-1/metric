@@ -3,18 +3,19 @@ import { ArrowRightIcon } from '@heroicons/react/24/outline'
 import { GAMES } from '@/games.config'
 import { GameIndexRow } from '@/components/layout/GameIndexRow'
 import { playClick } from '@/lib/sound/sfx'
+import { withViewTransition } from '@/lib/viewTransition'
 
 export default function DashboardHome() {
   const navigate = useNavigate()
 
   const goToFlagship = () => {
     playClick()
-    navigate('/play/reaction-time')
+    withViewTransition(() => navigate('/play/reaction-time'))
   }
 
   const goToParty = () => {
     playClick()
-    navigate('/party')
+    withViewTransition(() => navigate('/party'))
   }
 
   return (

@@ -28,7 +28,7 @@ export function Tile({ active, wrong, disabled, onTap }: TileProps) {
       ref={ref}
       disabled={disabled}
       onClick={onTap}
-      className={`aspect-square rounded-2xl border transition-colors duration-150
+      className={`aspect-square rounded-lg border transition-colors duration-150
         ${wrong ? 'border-danger bg-danger-dim' : active ? 'border-accent-sequence bg-accent-sequence' : 'border-border bg-surface-raised hover:bg-surface-hover'}
         ${disabled ? 'cursor-default' : 'cursor-pointer'}`}
     />

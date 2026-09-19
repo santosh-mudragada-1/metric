@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router'
 import { ArrowUpRightIcon } from '@heroicons/react/24/outline'
 import { playClick } from '@/lib/sound/sfx'
 import { useLocalBest } from '@/hooks/useLocalBest'
+import { withViewTransition } from '@/lib/viewTransition'
 import type { GameConfig } from '@/games.config'
 import type { Bests } from '@/lib/storage'
 
@@ -36,7 +37,7 @@ export function GameIndexRow({ game, index }: { game: GameConfig; index: number 
 
   const go = () => {
     playClick()
-    navigate(`/play/${game.id}`)
+    withViewTransition(() => navigate(`/play/${game.id}`))
   }
 
   return (

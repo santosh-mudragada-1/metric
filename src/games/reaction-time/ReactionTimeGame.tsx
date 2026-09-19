@@ -13,11 +13,10 @@ export function ReactionTimeGame() {
     return (
       <ResultCard
         accent="reaction"
-        title={`${result.averageMs} ms average`}
+        primary={{ value: result.averageMs, unit: 'ms', label: 'average reaction' }}
         isNewBest={isNewBest}
         onPlayAgain={start}
         stats={[
-          { label: 'Average', value: `${result.averageMs} ms` },
           { label: 'Best attempt', value: `${result.bestMs} ms` },
           { label: 'Rounds', value: result.attempts.length },
         ]}

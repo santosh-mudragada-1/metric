@@ -54,6 +54,13 @@ export function countdownPulse(target: Target) {
   )
 }
 
+/** The GO moment — a harder impact than the digit ticks that precede it. */
+export function countdownImpact(target: Target) {
+  const tl = gsap.timeline()
+  tl.fromTo(target, { scale: 1.7, opacity: 0 }, { scale: 1, opacity: 1, duration: DURATION.fast, ease: EASE.snap })
+  return tl
+}
+
 export function staggerReveal(
   targets: Element[] | NodeListOf<Element>,
   opts: {

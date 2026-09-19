@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useGSAP } from '@gsap/react'
-import { countdownPulse } from '@/lib/animation/presets'
+import { countdownImpact, countdownPulse } from '@/lib/animation/presets'
 import { playCountdownGo, playCountdownTick } from '@/lib/sound/sfx'
 
 interface CountdownProps {
@@ -50,12 +50,18 @@ export function Countdown({ seconds = 3, endsAt, onComplete }: CountdownProps) {
   }, [count, endsAt])
 
   useGSAP(() => {
-    countdownPulse(numberRef.current)
+    if (count <= 0) countdownImpact(numberRef.current)
+    else countdownPulse(numberRef.current)
   }, [count])
 
   return (
-    <div className="flex h-72 items-center justify-center">
-      <div ref={numberRef} className="font-display text-8xl font-bold tabular-nums text-text">
+    <div className="flex h-[60vh] min-h-96 flex-col items-center justify-center gap-5">
+      <span className="font-mono text-xs font-medium tracking-[0.22em] text-text-dim uppercase">get ready</span>
+      <div
+        ref={numberRef}
+        className={`font-display text-readout font-bold tabular-nums transition-colors duration-150
+          ${count <= 0 ? 'text-signal' : 'text-text'}`}
+      >
         {count > 0 ? count : 'GO'}
       </div>
     </div>

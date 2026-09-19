@@ -27,13 +27,12 @@ export function AimTrainerGame() {
     return (
       <ResultCard
         accent="aim"
-        title={`${accuracy}% accuracy`}
+        primary={{ value: accuracy, unit: '%', label: 'accuracy' }}
         isNewBest={isNewBest}
         onPlayAgain={start}
         stats={[
           { label: 'Hits', value: hits },
           { label: 'Misses', value: misses },
-          { label: 'Accuracy', value: `${accuracy}%` },
           { label: 'Avg hit time', value: `${avgHitMs} ms` },
           { label: 'Best streak', value: bestStreak },
         ]}

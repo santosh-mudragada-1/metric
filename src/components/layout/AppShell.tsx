@@ -1,7 +1,10 @@
-import { Link, NavLink, Outlet } from 'react-router'
+import { useRef } from 'react'
+import { Link, NavLink, Outlet, useLocation } from 'react-router'
+import { useGSAP } from '@gsap/react'
 import { SpeakerWaveIcon, SpeakerXMarkIcon } from '@heroicons/react/24/outline'
 import { IconButton } from '@/components/ui/IconButton'
 import { useSound } from '@/hooks/useSound'
+import { enterMode } from '@/lib/animation/presets'
 
 const NAV_ITEMS = [
   { to: '/', label: 'Play', end: true },
@@ -10,6 +13,12 @@ const NAV_ITEMS = [
 
 export function AppShell() {
   const { muted, toggleMute } = useSound()
+  const location = useLocation()
+  const outletRef = useRef<HTMLDivElement>(null)
+
+  useGSAP(() => {
+    enterMode(outletRef.current)
+  }, [location.pathname])
 
   return (
     <div className="mx-auto flex min-h-svh max-w-5xl flex-col px-4 sm:px-6">
@@ -46,7 +55,7 @@ export function AppShell() {
           {muted ? <SpeakerXMarkIcon className="h-5 w-5" /> : <SpeakerWaveIcon className="h-5 w-5" />}
         </IconButton>
       </header>
-      <main className="flex flex-1 flex-col pb-20 sm:pb-24">
+      <main ref={outletRef} className="flex flex-1 flex-col pb-20 sm:pb-24">
         <Outlet />
       </main>
     </div>

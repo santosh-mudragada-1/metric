@@ -24,10 +24,9 @@ export function NumberMemoryGame() {
     return (
       <ResultCard
         accent="number"
-        title={`${digitsReached} digits`}
+        primary={{ value: digitsReached, label: 'digits recalled' }}
         isNewBest={isNewBest}
         onPlayAgain={start}
-        stats={[{ label: 'Digits reached', value: digitsReached }]}
       />
     )
   }

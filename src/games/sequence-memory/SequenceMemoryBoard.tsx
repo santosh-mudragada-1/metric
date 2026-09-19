@@ -5,8 +5,16 @@ import { SEQUENCE_MEMORY } from '@shared/gameConfig'
 import { Button } from '@/components/ui/Button'
 import { pulseGlow } from '@/lib/animation/presets'
 import { playLevelUp, playTile } from '@/lib/sound/sfx'
+import { SequencePreview } from '@/components/previews/SequencePreview'
 import { Tile } from './Tile'
 import type { SequencePhase } from './useSequenceMemorySolo'
+
+const PHASE_LABELS: Record<string, string> = {
+  showing: 'watch closely',
+  input: 'your turn',
+  wrongTile: 'not quite',
+  levelUp: 'level up',
+}
 
 interface SequenceMemoryBoardProps {
   phase: SequencePhase
@@ -62,12 +70,19 @@ export function SequenceMemoryBoard({
 
   if (phase === 'idle') {
     return (
-      <div className="flex h-96 flex-col items-center justify-center gap-4 rounded-3xl border border-border bg-surface-raised p-6 text-center">
-        <p className="font-display text-xl font-semibold lowercase tracking-tight text-text">Sequence Memory</p>
-        <p className="max-w-xs text-sm text-text-muted">
+      <div className="relative flex h-[65vh] min-h-96 max-h-[38rem] flex-col items-center justify-center gap-4 overflow-hidden rounded-xl border border-border bg-surface p-6 text-center">
+        <div className="absolute top-5 left-5 flex items-center gap-2 sm:top-7 sm:left-7">
+          <span className="h-2 w-2 rounded-full bg-text-dim" />
+          <span className="font-mono text-[0.6875rem] tracking-[0.14em] text-text-dim uppercase">standby</span>
+        </div>
+        <div className="mb-2 h-10 w-10 opacity-80">
+          <SequencePreview />
+        </div>
+        <p className="font-display text-2xl font-semibold lowercase tracking-tight text-text">sequence memory</p>
+        <p className="max-w-xs text-sm leading-relaxed text-text-muted">
           Watch the tiles light up, then repeat the pattern. It grows by one tile every round.
         </p>
-        <Button onClick={onStart} chevron>
+        <Button onClick={onStart} chevron className="mt-2">
           Start
         </Button>
       </div>
@@ -77,14 +92,24 @@ export function SequenceMemoryBoard({
   const inputLocked = phase !== 'input'
 
   return (
-    <div className="flex h-96 flex-col items-center justify-center gap-4">
-      <p className="font-mono text-sm font-medium text-text-muted">
-        {phase === 'showing' && 'watch closely...'}
-        {phase === 'input' && `your turn — ${userProgress}/${sequence.length}`}
-        {phase === 'wrongTile' && 'not quite!'}
-        {phase === 'levelUp' && 'level up!'}
-      </p>
-      <div ref={gridRef} className="grid w-72 grid-cols-3 gap-3">
+    <div className="relative flex h-[65vh] min-h-96 max-h-[38rem] flex-col items-center justify-center gap-8 overflow-hidden rounded-xl border border-border bg-surface">
+      <div className="absolute top-5 left-5 flex items-center gap-2 sm:top-7 sm:left-7">
+        <span
+          className={`h-2 w-2 rounded-full ${phase === 'wrongTile' ? 'bg-danger' : 'bg-accent-sequence live-loop shadow-[0_0_10px_1px_var(--color-accent-sequence)]'}`}
+        />
+        <span className="font-mono text-[0.6875rem] tracking-[0.14em] text-text-dim uppercase">{PHASE_LABELS[phase]}</span>
+      </div>
+      <div className="absolute top-5 right-5 font-mono text-sm text-text-dim tabular-nums sm:top-7 sm:right-7">
+        level {String(sequence.length).padStart(2, '0')}
+      </div>
+
+      {phase === 'input' && (
+        <p className="font-mono text-xs tracking-[0.14em] text-text-dim uppercase tabular-nums">
+          {userProgress} / {sequence.length}
+        </p>
+      )}
+
+      <div ref={gridRef} className="grid w-72 grid-cols-3 gap-3 sm:w-96 sm:gap-4">
         {Array.from({ length: SEQUENCE_MEMORY.gridSize }).map((_, i) => (
           <Tile
             key={i}

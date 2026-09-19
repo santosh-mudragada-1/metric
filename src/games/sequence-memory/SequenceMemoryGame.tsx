@@ -23,10 +23,9 @@ export function SequenceMemoryGame() {
     return (
       <ResultCard
         accent="sequence"
-        title={`Level ${levelReached}`}
+        primary={{ value: levelReached, label: 'level reached' }}
         isNewBest={isNewBest}
         onPlayAgain={start}
-        stats={[{ label: 'Level reached', value: levelReached }]}
       />
     )
   }
