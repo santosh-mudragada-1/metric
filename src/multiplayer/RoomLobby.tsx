@@ -31,7 +31,8 @@ function DeviceIcon({ device }: { device: DeviceType }) {
 const LOCKED_GAME_REASON =
   'Disabled — players joined from different device types (touch vs. mouse/keyboard), which would give one side an unfair advantage.'
 
-export function RoomLobby() {
+/** Rendered in the room header, beside the title — the host's start control, or a waiting indicator for everyone else. */
+export function RoomLobbyAction() {
   const { state, send } = usePartyRoom()
   const { profile } = useProfile()
   if (!state) return null
@@ -40,6 +41,36 @@ export function RoomLobby() {
   const isHost = me?.isHost ?? false
   const connectedPlayers = state.players.filter((p) => p.connected)
   const allReady = connectedPlayers.length > 0 && connectedPlayers.every((p) => p.ready)
+  const currentGameLocked = hasMixedDevices(state.players) && DEVICE_SENSITIVE_GAMES.includes(state.gameId)
+
+  if (!isHost) {
+    return (
+      <Button variant="ghost" disabled className="shrink-0">
+        Waiting for host
+      </Button>
+    )
+  }
+
+  return (
+    <Button
+      variant="primary"
+      chevron
+      disabled={!allReady || currentGameLocked}
+      onClick={() => send({ type: 'hostStartRound' })}
+      className="shrink-0"
+    >
+      {currentGameLocked ? 'Pick a different game' : allReady ? 'Start game' : 'Waiting for everyone to be ready'}
+    </Button>
+  )
+}
+
+export function RoomLobby() {
+  const { state, send } = usePartyRoom()
+  const { profile } = useProfile()
+  if (!state) return null
+
+  const me = state.players.find((p) => p.id === profile.clientPlayerId)
+  const isHost = me?.isHost ?? false
   const game = GAME_MAP[state.gameId]
   const mixedDevices = hasMixedDevices(state.players)
   const currentGameLocked = mixedDevices && DEVICE_SENSITIVE_GAMES.includes(state.gameId)
@@ -183,23 +214,11 @@ export function RoomLobby() {
                 className="h-5 w-5 shrink-0 accent-invert"
               />
             </label>
-
-            <Button
-              variant="primary"
-              chevron
-              disabled={!allReady || currentGameLocked}
-              onClick={() => send({ type: 'hostStartRound' })}
-              className="mt-auto"
-            >
-              {currentGameLocked ? 'Pick a different game' : allReady ? 'Start game' : 'Waiting for everyone to be ready'}
-            </Button>
           </>
         ) : (
           <div className="flex flex-1 flex-col items-center justify-center gap-2 py-8 text-center text-text-muted">
             <p className="font-display text-2xl font-semibold lowercase tracking-tight text-text">{game.name}</p>
-            <p className="font-mono text-xs tracking-[0.1em] text-text-dim uppercase">
-              {state.maxRounds} rounds — waiting for the host to start
-            </p>
+            <p className="font-mono text-xs tracking-[0.1em] text-text-dim uppercase">{state.maxRounds} rounds</p>
           </div>
         )}
       </Card>

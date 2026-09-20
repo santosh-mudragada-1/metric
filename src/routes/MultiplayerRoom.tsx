@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Countdown } from '@/games/shared/Countdown'
 import { PartyProvider } from '@/multiplayer/PartyProvider'
 import { usePartyRoom } from '@/multiplayer/usePartyRoom'
-import { RoomLobby } from '@/multiplayer/RoomLobby'
+import { RoomLobby, RoomLobbyAction } from '@/multiplayer/RoomLobby'
 import { RoomLeaderboard } from '@/multiplayer/RoomLeaderboard'
 import { useProfile } from '@/hooks/useProfile'
 import { ReactionTimeMultiplayer } from '@/multiplayer/adapters/ReactionTimeMultiplayer'
@@ -109,6 +109,7 @@ function RoomContent({ roomCode }: { roomCode: string }) {
             ? `${GAME_MAP[state.gameId].name} · ${state.maxRounds} rounds`
             : `${GAME_MAP[state.gameId].name} · Round ${state.round}/${state.maxRounds}`
         }
+        action={state.phase === 'lobby' ? <RoomLobbyAction /> : undefined}
       />
 
       {state.phase === 'lobby' && <RoomLobby />}
