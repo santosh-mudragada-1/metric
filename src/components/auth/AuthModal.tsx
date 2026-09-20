@@ -1,0 +1,135 @@
+import { useState } from 'react'
+import { EnvelopeOpenIcon, KeyIcon } from '@heroicons/react/24/outline'
+import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/Button'
+import { useAuth } from '@/hooks/useAuth'
+import type { AuthResult } from '@/lib/auth/AuthContext'
+import { GoogleIcon } from './icons'
+
+interface AuthModalProps {
+  open: boolean
+  onClose: () => void
+}
+
+type Step = 'options' | 'sent'
+
+export function AuthModal({ open, onClose }: AuthModalProps) {
+  const { configured, signInWithGoogle, sendMagicLink, signInWithPasskey } = useAuth()
+  const [step, setStep] = useState<Step>('options')
+  const [email, setEmail] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  const reset = () => {
+    setStep('options')
+    setEmail('')
+    setError(null)
+    setBusy(false)
+  }
+
+  const close = () => {
+    reset()
+    onClose()
+  }
+
+  const run = async (fn: () => Promise<AuthResult>): Promise<boolean> => {
+    setBusy(true)
+    setError(null)
+    const result = await fn()
+    setBusy(false)
+    if (result.error) {
+      setError(result.error)
+      return false
+    }
+    return true
+  }
+
+  const handlePasskey = async () => {
+    if (await run(signInWithPasskey)) close()
+  }
+
+  const handleSendLink = async () => {
+    if (!email.trim()) return
+    if (await run(() => sendMagicLink(email.trim()))) setStep('sent')
+  }
+
+  return (
+    <Modal open={open} onClose={close} title={step === 'sent' ? 'Check your email' : 'Sign in'}>
+      {!configured && (
+        <p className="mb-4 text-sm text-text-muted">
+          Sign-in isn't configured yet — add Supabase credentials to enable this.
+        </p>
+      )}
+
+      {step === 'options' && (
+        <div className="flex flex-col gap-3">
+          <Button variant="ghost" size="lg" disabled={!configured || busy} onClick={handlePasskey} className="w-full gap-3">
+            <KeyIcon className="h-4.5 w-4.5" />
+            Sign in with a passkey
+          </Button>
+          <Button
+            variant="ghost"
+            size="lg"
+            disabled={!configured || busy}
+            onClick={() => run(signInWithGoogle)}
+            className="w-full gap-3"
+          >
+            <GoogleIcon />
+            Continue with Google
+          </Button>
+
+          <div className="my-1 flex items-center gap-3">
+            <span className="h-px flex-1 bg-border" />
+            <span className="font-mono text-[0.6875rem] tracking-[0.14em] text-text-dim uppercase">or</span>
+            <span className="h-px flex-1 bg-border" />
+          </div>
+
+          <input
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSendLink()}
+            disabled={!configured || busy}
+            className="h-13 w-full rounded-full border border-border-strong bg-surface-raised px-4 text-sm text-text
+              outline-none focus:border-invert/60 disabled:opacity-50"
+          />
+          <Button
+            variant="primary"
+            size="lg"
+            disabled={!configured || busy || !email.trim()}
+            onClick={handleSendLink}
+            className="w-full"
+          >
+            Email me a sign-in link
+          </Button>
+        </div>
+      )}
+
+      {step === 'sent' && (
+        <div className="flex flex-col items-center gap-4 py-4 text-center">
+          <EnvelopeOpenIcon className="h-8 w-8 text-text-dim" />
+          <p className="text-sm text-text-muted">
+            We sent a sign-in link to <span className="text-text">{email}</span>. Open it on this device to finish
+            signing in.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setStep('options')
+              setError(null)
+            }}
+            className="cursor-pointer font-mono text-[0.6875rem] tracking-[0.14em] text-text-dim uppercase
+              hover:text-text-muted"
+          >
+            Use a different method
+          </button>
+        </div>
+      )}
+
+      {error && <p className="mt-3 text-sm text-danger">{error}</p>}
+    </Modal>
+  )
+}

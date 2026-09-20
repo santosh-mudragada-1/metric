@@ -1,5 +1,9 @@
+import { useRef } from 'react'
+import { useGSAP } from '@gsap/react'
 import { CHIMP_TEST } from '@shared/gameConfig'
 import { Button } from '@/components/ui/Button'
+import { pulseGlow } from '@/lib/animation/presets'
+import { playFail, playLevelUp, playTile } from '@/lib/sound/sfx'
 import { ChimpPreview } from '@/components/previews/ChimpPreview'
 import { ChimpTile } from './ChimpTile'
 import type { ChimpPhase } from './useChimpTestSolo'
@@ -28,6 +32,23 @@ export function ChimpTestBoard({
   onStart,
   onTileTap,
 }: ChimpTestBoardProps) {
+  const gridRef = useRef<HTMLDivElement>(null)
+
+  useGSAP(() => {
+    if (progress > 0) playTile(progress - 1)
+  }, [progress])
+
+  useGSAP(() => {
+    if (wrongTileIndex !== null) playFail()
+  }, [wrongTileIndex])
+
+  useGSAP(() => {
+    if (phase === 'levelUp') {
+      playLevelUp()
+      pulseGlow(gridRef.current)
+    }
+  }, [phase])
+
   if (phase === 'idle') {
     return (
       <div className="relative flex h-[65vh] min-h-96 max-h-[38rem] flex-col items-center justify-center gap-4 overflow-hidden rounded-panel border border-border bg-surface p-6 text-center">
@@ -68,7 +89,7 @@ export function ChimpTestBoard({
         {progress} / {positions.length}
       </p>
 
-      <div className="grid w-full max-w-xl grid-cols-6 gap-2.5 sm:gap-3.5">
+      <div ref={gridRef} className="grid w-full max-w-xl grid-cols-6 gap-2.5 sm:gap-3.5">
         {Array.from({ length: CHIMP_TEST.columns * CHIMP_TEST.rows }).map((_, i) => {
           const numberIndex = positions.indexOf(i)
           const isTarget = numberIndex !== -1

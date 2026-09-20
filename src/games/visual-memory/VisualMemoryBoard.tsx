@@ -1,5 +1,9 @@
+import { useRef } from 'react'
+import { useGSAP } from '@gsap/react'
 import { VISUAL_MEMORY } from '@shared/gameConfig'
 import { Button } from '@/components/ui/Button'
+import { pulseGlow } from '@/lib/animation/presets'
+import { playLevelUp } from '@/lib/sound/sfx'
 import { VisualPreview } from '@/components/previews/VisualPreview'
 import { VisualTile } from './VisualTile'
 import type { VisualPhase } from './useVisualMemorySolo'
@@ -28,6 +32,15 @@ export function VisualMemoryBoard({
   onStart,
   onTileTap,
 }: VisualMemoryBoardProps) {
+  const gridRef = useRef<HTMLDivElement>(null)
+
+  useGSAP(() => {
+    if (phase === 'levelUp') {
+      playLevelUp()
+      pulseGlow(gridRef.current)
+    }
+  }, [phase])
+
   if (phase === 'idle') {
     return (
       <div className="relative flex h-[65vh] min-h-96 max-h-[38rem] flex-col items-center justify-center gap-4 overflow-hidden rounded-panel border border-border bg-surface p-6 text-center">
@@ -63,13 +76,23 @@ export function VisualMemoryBoard({
         level {String(targetTiles.length).padStart(2, '0')}
       </div>
 
-      <p
-        className={`font-mono text-xs tracking-[0.14em] text-text-dim uppercase tabular-nums ${phase === 'input' ? '' : 'invisible'}`}
-      >
-        {foundTiles.length} / {targetTiles.length}
-      </p>
+      {phase === 'showing' ? (
+        <div className="h-1 w-40 overflow-hidden rounded-full bg-surface-hover sm:w-56">
+          <div
+            key={targetTiles.join(',')}
+            className="h-full origin-left bg-accent-visual"
+            style={{ animation: `shrink-bar ${VISUAL_MEMORY.showMs}ms linear forwards` }}
+          />
+        </div>
+      ) : (
+        <p
+          className={`font-mono text-xs tracking-[0.14em] text-text-dim uppercase tabular-nums ${phase === 'input' ? '' : 'invisible'}`}
+        >
+          {foundTiles.length} / {targetTiles.length}
+        </p>
+      )}
 
-      <div className="grid w-72 grid-cols-5 gap-2.5 sm:w-96 sm:gap-3.5">
+      <div ref={gridRef} className="grid w-72 grid-cols-5 gap-2.5 sm:w-96 sm:gap-3.5">
         {Array.from({ length: VISUAL_MEMORY.gridSize * VISUAL_MEMORY.gridSize }).map((_, i) => {
           const active = (phase === 'showing' && targetTiles.includes(i)) || foundTiles.includes(i)
           return (

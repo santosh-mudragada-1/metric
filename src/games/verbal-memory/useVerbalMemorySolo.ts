@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { VERBAL_MEMORY, generateVerbalMemoryWords, wasWordSeenBefore } from '@shared/gameConfig'
 import { useLocalBest } from '@/hooks/useLocalBest'
+import { useRemoteScore } from '@/hooks/useRemoteScore'
 import { playFail, playReveal } from '@/lib/sound/sfx'
 
 export type VerbalPhase = 'idle' | 'countdown' | 'playing' | 'result'
@@ -15,6 +16,7 @@ export function useVerbalMemorySolo() {
   const [lives, setLives] = useState(VERBAL_MEMORY.lives)
   const [feedback, setFeedback] = useState<VerbalFeedback>(null)
   const { best, record } = useLocalBest('verbal-memory')
+  const { logResult } = useRemoteScore('verbal-memory')
   const recordedRef = useRef(false)
 
   const start = useCallback(() => {
@@ -50,22 +52,23 @@ export function useVerbalMemorySolo() {
     if (!feedback) return
     const t = setTimeout(() => {
       setFeedback(null)
-      setIndex((i) => i + 1)
+      if (lives <= 0) {
+        setPhase('result')
+      } else {
+        setIndex((i) => i + 1)
+      }
     }, 260)
     return () => clearTimeout(t)
-  }, [feedback])
-
-  useEffect(() => {
-    if (phase === 'playing' && lives <= 0) setPhase('result')
-  }, [phase, lives])
+  }, [feedback, lives])
 
   useEffect(() => {
     if (phase !== 'result' || recordedRef.current) return
     recordedRef.current = true
+    logResult(score)
     if (!best || score > best.bestScore) {
       record({ bestScore: score, lastPlayedAt: new Date().toISOString() })
     }
-  }, [phase, score, best, record])
+  }, [phase, score, best, record, logResult])
 
   const isNewBest = phase === 'result' && (!best || score > best.bestScore)
   const currentWord = words[index] ?? ''

@@ -7,10 +7,8 @@ import { Button } from '@/components/ui/Button'
 import { StatTile } from '@/components/ui/StatTile'
 import { ACCENT_CLASSES, GAME_MAP, type GameConfig } from '@/games.config'
 import { useProfile } from '@/hooks/useProfile'
-import { generateRoomCode } from '@/lib/roomCode'
 import { countUp, flashSuccess, staggerReveal } from '@/lib/animation/presets'
 import { playBack, playCopy, playSuccess } from '@/lib/sound/sfx'
-import { withViewTransition } from '@/lib/viewTransition'
 import type { GameId } from '@shared/types'
 
 interface StatItem {
@@ -60,7 +58,7 @@ export function ResultCard({
 
   const [editingName, setEditingName] = useState(false)
   const [nameDraft, setNameDraft] = useState(profile.name)
-  const [challengeState, setChallengeState] = useState<'idle' | 'copied'>('idle')
+  const [shareState, setShareState] = useState<'idle' | 'copied'>('idle')
 
   useGSAP(() => {
     countUp(numberRef.current, { to: primary.value, duration: 0.9 })
@@ -82,15 +80,9 @@ export function ResultCard({
     setEditingName(false)
   }
 
-  const challengeFriend = async () => {
-    if (!profile.name.trim()) {
-      setEditingName(true)
-      return
-    }
-
-    const code = generateRoomCode()
-    const url = `${window.location.origin}/party/${code}?game=${gameId}`
-    const shareText = `I scored ${primary.value}${primary.unit ?? ''} on ${GAME_MAP[gameId].name} in Metric — beat that.`
+  const shareResult = async () => {
+    const url = `${window.location.origin}/play/${gameId}`
+    const shareText = `I scored ${primary.value}${primary.unit ?? ''} on ${GAME_MAP[gameId].name} in Metric — come try it.`
 
     let shared = false
     if (navigator.share) {
@@ -98,23 +90,21 @@ export function ResultCard({
         await navigator.share({ title: 'Metric', text: shareText, url })
         shared = true
       } catch {
-        // share sheet dismissed — fall through to clipboard so the challenge link isn't lost
+        // share sheet dismissed — fall through to clipboard so the link isn't lost
       }
     }
     if (!shared) {
       try {
         await navigator.clipboard.writeText(url)
       } catch {
-        // clipboard unavailable — the room still exists, host can read the code off the next screen
+        // clipboard unavailable — nothing more to do here
       }
     }
 
     playCopy()
     flashSuccess(rootRef.current)
-    setChallengeState('copied')
-    setTimeout(() => {
-      withViewTransition(() => navigate(`/party/${code}?game=${gameId}`))
-    }, 900)
+    setShareState('copied')
+    setTimeout(() => setShareState('idle'), 1800)
   }
 
   return (
@@ -180,22 +170,22 @@ export function ResultCard({
 
           <button
             type="button"
-            disabled={challengeState === 'copied'}
-            onClick={challengeFriend}
+            disabled={shareState === 'copied'}
+            onClick={shareResult}
             className="flex h-13 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full border
               border-border-strong bg-surface-raised px-4 font-display text-[0.8125rem] font-medium text-text
               transition-colors hover:border-text-muted hover:bg-surface-hover disabled:cursor-default
               disabled:opacity-70"
           >
-            {challengeState === 'copied' ? (
+            {shareState === 'copied' ? (
               <>
                 <CheckIcon className="h-4 w-4 shrink-0 text-success" />
-                <span className="truncate">Link copied — opening room</span>
+                <span className="truncate">Link copied</span>
               </>
             ) : (
               <>
                 <ArrowUpOnSquareIcon className="h-4 w-4 shrink-0" />
-                <span className="truncate">Post score &amp; challenge a friend</span>
+                <span className="truncate">Share result &amp; invite a friend</span>
               </>
             )}
           </button>

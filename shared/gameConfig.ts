@@ -142,11 +142,13 @@ export function generateVerbalMemoryWords(length: number = VERBAL_MEMORY.sequenc
   const out: string[] = []
   let poolIndex = 0
   for (let i = 0; i < length; i++) {
-    const canRepeat = seen.length > 0
+    const prev = out[out.length - 1]
+    // Exclude the immediately preceding word so a repeat never looks like a no-op.
+    const repeatCandidates = seen.filter((w) => w !== prev)
     const poolExhausted = poolIndex >= pool.length
-    const shouldRepeat = canRepeat && (poolExhausted || Math.random() < VERBAL_MEMORY.repeatProbability)
+    const shouldRepeat = repeatCandidates.length > 0 && (poolExhausted || Math.random() < VERBAL_MEMORY.repeatProbability)
     if (shouldRepeat) {
-      out.push(seen[Math.floor(Math.random() * seen.length)])
+      out.push(repeatCandidates[Math.floor(Math.random() * repeatCandidates.length)])
     } else {
       const word = pool[poolIndex++]
       out.push(word)

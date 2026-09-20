@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { REACTION_TIME, generateReactionDelay } from '@shared/gameConfig'
 import { useLocalBest } from '@/hooks/useLocalBest'
+import { useRemoteScore } from '@/hooks/useRemoteScore'
 
 export type ReactionPhase = 'idle' | 'countdown' | 'waiting' | 'tooSoon' | 'go' | 'roundResult' | 'result'
 
@@ -15,6 +16,7 @@ export function useReactionTimeSolo() {
   const goAtRef = useRef(0)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const { best, record } = useLocalBest('reaction-time')
+  const { logResult } = useRemoteScore('reaction-time')
   const recordedRef = useRef(false)
 
   const clearTimer = useCallback(() => {
@@ -81,10 +83,11 @@ export function useReactionTimeSolo() {
   useEffect(() => {
     if (!result || recordedRef.current) return
     recordedRef.current = true
+    logResult(result.averageMs)
     if (!best || result.averageMs < best.bestMs) {
       record({ bestMs: result.averageMs, lastPlayedAt: new Date().toISOString() })
     }
-  }, [result, best, record])
+  }, [result, best, record, logResult])
 
   return {
     phase,

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { numberDisplayMs } from '@shared/gameConfig'
 import { Button } from '@/components/ui/Button'
 import { NumberPreview } from '@/components/previews/NumberPreview'
@@ -32,21 +32,7 @@ export function NumberMemoryBoard({
   onInputChange,
   onSubmit,
 }: NumberMemoryBoardProps) {
-  const [barPct, setBarPct] = useState(100)
   const inputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    if (phase !== 'showing') return
-    setBarPct(100)
-    let raf2 = 0
-    const raf1 = requestAnimationFrame(() => {
-      raf2 = requestAnimationFrame(() => setBarPct(0))
-    })
-    return () => {
-      cancelAnimationFrame(raf1)
-      cancelAnimationFrame(raf2)
-    }
-  }, [phase, currentNumber])
 
   useEffect(() => {
     if (phase === 'input') inputRef.current?.focus()
@@ -83,8 +69,9 @@ export function NumberMemoryBoard({
           <p className="font-mono text-readout font-bold tabular-nums text-text">{currentNumber}</p>
           <div className="h-1 w-full overflow-hidden rounded-full bg-surface-hover">
             <div
-              className="h-full bg-accent-number transition-[width] ease-linear"
-              style={{ width: `${barPct}%`, transitionDuration: `${numberDisplayMs(digitCount)}ms` }}
+              key={currentNumber}
+              className="h-full origin-left bg-accent-number"
+              style={{ animation: `shrink-bar ${numberDisplayMs(digitCount)}ms linear forwards` }}
             />
           </div>
         </div>
@@ -96,13 +83,13 @@ export function NumberMemoryBoard({
           className="flex w-full max-w-2xl cursor-text flex-col items-center gap-5 px-2"
         >
           <p className="font-mono text-xs tracking-[0.14em] text-text-dim uppercase">type the number you saw</p>
-          <p className="min-h-[3.5rem] w-full [overflow-wrap:anywhere] text-center font-mono text-3xl font-bold tabular-nums text-text sm:text-4xl">
-            {input}
+          <div className="flex min-h-[3.5rem] w-full items-center justify-center gap-0.5 [overflow-wrap:anywhere] text-center font-mono text-3xl font-bold tabular-nums text-text sm:text-4xl">
+            <span>{input}</span>
             <span
-              className="live-loop -ml-0.5 inline-block h-[0.85em] w-[3px] translate-y-[0.1em] bg-accent-number align-middle"
+              className="live-loop inline-block h-[0.85em] w-[3px] shrink-0 bg-accent-number"
               style={{ animation: 'caret-blink 1s step-end infinite' }}
             />
-          </p>
+          </div>
           <input
             ref={inputRef}
             value={input}

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { VISUAL_MEMORY, generateVisualMemoryLevel } from '@shared/gameConfig'
 import { useLocalBest } from '@/hooks/useLocalBest'
+import { useRemoteScore } from '@/hooks/useRemoteScore'
 import { playFail, playReveal } from '@/lib/sound/sfx'
 
 export type VisualPhase = 'idle' | 'countdown' | 'showing' | 'input' | 'wrongTile' | 'levelUp' | 'result'
@@ -14,6 +15,7 @@ export function useVisualMemorySolo() {
   const [wrongTileIndex, setWrongTileIndex] = useState<number | null>(null)
   const [levelReached, setLevelReached] = useState(0)
   const { best, record } = useLocalBest('visual-memory')
+  const { logResult } = useRemoteScore('visual-memory')
   const recordedRef = useRef(false)
 
   const start = useCallback(() => {
@@ -77,10 +79,11 @@ export function useVisualMemorySolo() {
   useEffect(() => {
     if (phase !== 'result' || recordedRef.current) return
     recordedRef.current = true
+    logResult(levelReached)
     if (!best || levelReached > best.bestLevel) {
       record({ bestLevel: levelReached, lastPlayedAt: new Date().toISOString() })
     }
-  }, [phase, levelReached, best, record])
+  }, [phase, levelReached, best, record, logResult])
 
   const isNewBest = phase === 'result' && (!best || levelReached > best.bestLevel)
 

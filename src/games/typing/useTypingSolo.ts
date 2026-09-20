@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { generateTypingPassage } from '@shared/gameConfig'
 import { useLocalBest } from '@/hooks/useLocalBest'
+import { useRemoteScore } from '@/hooks/useRemoteScore'
 
 export type TypingPhase = 'idle' | 'countdown' | 'typing' | 'result'
 
@@ -22,6 +23,7 @@ export function useTypingSolo() {
   const [wpm, setWpm] = useState(0)
   const [accuracy, setAccuracy] = useState(100)
   const { best, record } = useLocalBest('typing')
+  const { logResult } = useRemoteScore('typing')
   const recordedRef = useRef(false)
   const startTimeRef = useRef(0)
 
@@ -62,10 +64,11 @@ export function useTypingSolo() {
   useEffect(() => {
     if (phase !== 'result' || recordedRef.current) return
     recordedRef.current = true
+    logResult(wpm)
     if (!best || wpm > best.bestWpm || (wpm === best.bestWpm && accuracy > best.bestAccuracy)) {
       record({ bestWpm: wpm, bestAccuracy: accuracy, lastPlayedAt: new Date().toISOString() })
     }
-  }, [phase, wpm, accuracy, best, record])
+  }, [phase, wpm, accuracy, best, record, logResult])
 
   const isNewBest = phase === 'result' && (!best || wpm > best.bestWpm)
 

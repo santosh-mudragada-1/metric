@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
 import { popIn } from '@/lib/animation/presets'
+import { playReveal } from '@/lib/sound/sfx'
 
 interface TargetProps {
   x: number
@@ -18,6 +19,7 @@ export function Target({ x, y, onHit }: TargetProps) {
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation()
+    playReveal()
     if (!ref.current) return onHit()
     gsap.to(ref.current, {
       scale: 0.6,

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { CHIMP_TEST, generateChimpLevel } from '@shared/gameConfig'
 import { useLocalBest } from '@/hooks/useLocalBest'
+import { useRemoteScore } from '@/hooks/useRemoteScore'
 
 export type ChimpPhase = 'idle' | 'countdown' | 'input' | 'wrongTile' | 'levelUp' | 'result'
 
@@ -14,6 +15,7 @@ export function useChimpTestSolo() {
   const [wrongTileIndex, setWrongTileIndex] = useState<number | null>(null)
   const [levelReached, setLevelReached] = useState(0)
   const { best, record } = useLocalBest('chimp-test')
+  const { logResult } = useRemoteScore('chimp-test')
   const recordedRef = useRef(false)
 
   const start = useCallback(() => {
@@ -73,10 +75,11 @@ export function useChimpTestSolo() {
   useEffect(() => {
     if (phase !== 'result' || recordedRef.current) return
     recordedRef.current = true
+    logResult(levelReached)
     if (!best || levelReached > best.bestLevel) {
       record({ bestLevel: levelReached, lastPlayedAt: new Date().toISOString() })
     }
-  }, [phase, levelReached, best, record])
+  }, [phase, levelReached, best, record, logResult])
 
   const isNewBest = phase === 'result' && (!best || levelReached > best.bestLevel)
 

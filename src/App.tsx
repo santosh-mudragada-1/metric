@@ -5,8 +5,10 @@ import DashboardHome from '@/routes/DashboardHome'
 import GamePage from '@/routes/GamePage'
 import MultiplayerLobby from '@/routes/MultiplayerLobby'
 import MultiplayerRoom from '@/routes/MultiplayerRoom'
+import StatsPage from '@/routes/StatsPage'
 import NotFound from '@/routes/NotFound'
 import { registerReducedMotion } from '@/lib/animation/gsapConfig'
+import { AuthProvider } from '@/lib/auth/AuthContext'
 
 const router = createBrowserRouter([
   {
@@ -16,6 +18,7 @@ const router = createBrowserRouter([
       { path: '/play/:gameId', element: <GamePage /> },
       { path: '/party', element: <MultiplayerLobby /> },
       { path: '/party/:roomCode', element: <MultiplayerRoom /> },
+      { path: '/stats', element: <StatsPage /> },
       { path: '*', element: <NotFound /> },
     ],
   },
@@ -26,7 +29,11 @@ function App() {
     registerReducedMotion()
   }, [])
 
-  return <RouterProvider router={router} />
+  return (
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
+  )
 }
 
 export default App

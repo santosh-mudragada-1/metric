@@ -62,7 +62,7 @@ export function TypingBoard({ phase, text, typed, onStart, onInputChange }: Typi
               key={i}
               className={
                 isCurrent
-                  ? 'border-l-2 border-accent-typing text-text-muted'
+                  ? 'shadow-[inset_2px_0_0_0_var(--color-accent-typing)] text-text-muted'
                   : isTyped
                     ? isCorrect
                       ? 'text-text'

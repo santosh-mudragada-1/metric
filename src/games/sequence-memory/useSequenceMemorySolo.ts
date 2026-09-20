@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { SEQUENCE_MEMORY, extendSequence, generateSequence } from '@shared/gameConfig'
 import { useLocalBest } from '@/hooks/useLocalBest'
+import { useRemoteScore } from '@/hooks/useRemoteScore'
 import { playFail, playReveal } from '@/lib/sound/sfx'
 
 export type SequencePhase = 'idle' | 'countdown' | 'showing' | 'input' | 'wrongTile' | 'levelUp' | 'result'
@@ -12,6 +13,7 @@ export function useSequenceMemorySolo() {
   const [wrongTileIndex, setWrongTileIndex] = useState<number | null>(null)
   const [levelReached, setLevelReached] = useState(0)
   const { best, record } = useLocalBest('sequence-memory')
+  const { logResult } = useRemoteScore('sequence-memory')
   const recordedRef = useRef(false)
 
   const start = useCallback(() => {
@@ -71,10 +73,11 @@ export function useSequenceMemorySolo() {
   useEffect(() => {
     if (phase !== 'result' || recordedRef.current) return
     recordedRef.current = true
+    logResult(levelReached)
     if (!best || levelReached > best.bestLevel) {
       record({ bestLevel: levelReached, lastPlayedAt: new Date().toISOString() })
     }
-  }, [phase, levelReached, best, record])
+  }, [phase, levelReached, best, record, logResult])
 
   const isNewBest = phase === 'result' && (!best || levelReached > best.bestLevel)
 

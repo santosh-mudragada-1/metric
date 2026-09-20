@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { NUMBER_MEMORY, generateNumber, numberDisplayMs } from '@shared/gameConfig'
 import { useLocalBest } from '@/hooks/useLocalBest'
+import { useRemoteScore } from '@/hooks/useRemoteScore'
 
 export type NumberPhase = 'idle' | 'countdown' | 'showing' | 'input' | 'reveal' | 'result'
 
@@ -12,6 +13,7 @@ export function useNumberMemorySolo() {
   const [digitsReached, setDigitsReached] = useState(0)
   const [wasCorrect, setWasCorrect] = useState(false)
   const { best, record } = useLocalBest('number-memory')
+  const { logResult } = useRemoteScore('number-memory')
   const recordedRef = useRef(false)
 
   const setInput = useCallback((value: string) => {
@@ -65,10 +67,11 @@ export function useNumberMemorySolo() {
   useEffect(() => {
     if (phase !== 'result' || recordedRef.current) return
     recordedRef.current = true
+    logResult(digitsReached)
     if (!best || digitsReached > best.bestDigits) {
       record({ bestDigits: digitsReached, lastPlayedAt: new Date().toISOString() })
     }
-  }, [phase, digitsReached, best, record])
+  }, [phase, digitsReached, best, record, logResult])
 
   const isNewBest = phase === 'result' && (!best || digitsReached > best.bestDigits)
 

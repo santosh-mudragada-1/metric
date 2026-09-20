@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { AIM_TRAINER, generateAimTargets } from '@shared/gameConfig'
 import { useLocalBest } from '@/hooks/useLocalBest'
+import { useRemoteScore } from '@/hooks/useRemoteScore'
 
 export type AimPhase = 'idle' | 'countdown' | 'playing' | 'result'
 
@@ -24,6 +25,7 @@ export function useAimTrainerSolo() {
   const spawnAtRef = useRef(0)
   const spawnTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const { best, record } = useLocalBest('aim-trainer')
+  const { logResult } = useRemoteScore('aim-trainer')
   const recordedRef = useRef(false)
 
   const clearSpawnTimer = useCallback(() => {
@@ -87,10 +89,11 @@ export function useAimTrainerSolo() {
   useEffect(() => {
     if (phase !== 'result' || recordedRef.current) return
     recordedRef.current = true
+    logResult(hits)
     if (!best || hits > best.bestHits || (hits === best.bestHits && accuracy > best.bestAccuracy)) {
       record({ bestHits: hits, bestAccuracy: accuracy, lastPlayedAt: new Date().toISOString() })
     }
-  }, [phase, hits, accuracy, best, record])
+  }, [phase, hits, accuracy, best, record, logResult])
 
   const isNewBest = phase === 'result' && (!best || hits > best.bestHits)
 
