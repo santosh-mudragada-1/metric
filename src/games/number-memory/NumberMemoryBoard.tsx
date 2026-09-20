@@ -12,6 +12,38 @@ const PHASE_LABELS: Record<string, string> = {
   reveal: 'result',
 }
 
+// Past this many digits a single line would have to shrink so much it stops being readable —
+// wrapping to two lines instead keeps each line short enough to stay large.
+const TWO_LINE_THRESHOLD = 8
+
+/** Splits `text` at the midpoint of `fullLength` (not `text.length`) so the break point stays put as `text` fills in character by character (number memory's input echo, typed one digit at a time). */
+function splitAtMid(text: string, fullLength: number): [string, string] {
+  const mid = Math.ceil(fullLength / 2)
+  return [text.slice(0, mid), text.slice(mid)]
+}
+
+const blockCopy = {
+  onCopy: (e: React.ClipboardEvent) => e.preventDefault(),
+  onCut: (e: React.ClipboardEvent) => e.preventDefault(),
+  onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
+}
+const noSelectClass = 'select-none [-webkit-touch-callout:none]'
+
+/** Renders `text` with a blinking caret spliced in at `caretIndex` — or no caret at all when `caretIndex` is null, for a line the cursor isn't currently on. */
+function CaretLine({ text, caretIndex }: { text: string; caretIndex: number | null }) {
+  if (caretIndex === null) return <span>{text}</span>
+  return (
+    <>
+      <span>{text.slice(0, caretIndex)}</span>
+      <span
+        className="live-loop inline-block h-[0.85em] w-[3px] shrink-0 bg-accent-number"
+        style={{ animation: 'caret-blink 1s step-end infinite' }}
+      />
+      <span>{text.slice(caretIndex)}</span>
+    </>
+  )
+}
+
 interface NumberMemoryBoardProps {
   phase: NumberPhase
   digitCount: number
@@ -35,8 +67,8 @@ export function NumberMemoryBoard({
 }: NumberMemoryBoardProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [caretPos, setCaretPos] = useState(0)
-  const showingFit = useFitText(currentNumber, 7, 1.5)
-  const inputFit = useFitText(input, 4, 1.5)
+  const showingFit = useFitText(currentNumber, 7, 2.5)
+  const inputFit = useFitText(`${digitCount}:${input}`, 4, 2)
 
   useEffect(() => {
     if (phase === 'input') inputRef.current?.focus()
@@ -47,6 +79,12 @@ export function NumberMemoryBoard({
   }, [phase])
 
   const syncCaret = (el: HTMLInputElement) => setCaretPos(el.selectionStart ?? el.value.length)
+
+  const fullLength = currentNumber.length || digitCount
+  const showTwoLines = fullLength > TWO_LINE_THRESHOLD
+  const showingLines = showTwoLines ? splitAtMid(currentNumber, fullLength) : [currentNumber]
+  const [inputLine1, inputLine2] = splitAtMid(input, fullLength)
+  const mid = Math.ceil(fullLength / 2)
 
   return (
     <div className="relative flex h-[65vh] min-h-96 max-h-[38rem] flex-col items-center justify-center gap-5 overflow-hidden rounded-panel border border-border bg-surface p-6 text-center">
@@ -76,14 +114,21 @@ export function NumberMemoryBoard({
 
       {phase === 'showing' && (
         <div className="flex w-full max-w-xs flex-col items-center gap-4">
-          <div ref={showingFit.containerRef} className="w-full overflow-hidden">
-            <p
-              ref={showingFit.textRef as React.RefObject<HTMLParagraphElement>}
-              className="whitespace-nowrap text-center font-mono font-bold tabular-nums text-text"
-              style={{ fontSize: `${showingFit.fontSize}rem` }}
-            >
-              {currentNumber}
-            </p>
+          <div
+            ref={showingFit.containerRef}
+            className={`flex w-full flex-col items-center overflow-hidden ${noSelectClass}`}
+            style={{ fontSize: `${showingFit.fontSize}rem` }}
+            {...blockCopy}
+          >
+            {showTwoLines ? (
+              showingLines.map((line, i) => (
+                <p key={i} className="whitespace-nowrap text-center font-mono font-bold tabular-nums text-text">
+                  {line}
+                </p>
+              ))
+            ) : (
+              <p className="whitespace-nowrap text-center font-mono font-bold tabular-nums text-text">{currentNumber}</p>
+            )}
           </div>
           <div className="h-1 w-full overflow-hidden rounded-full bg-surface-hover">
             <div
@@ -101,19 +146,26 @@ export function NumberMemoryBoard({
           className="flex w-full max-w-2xl cursor-text flex-col items-center gap-5 px-2"
         >
           <p className="font-mono text-xs tracking-[0.14em] text-text-dim uppercase">type the number you saw</p>
-          <div ref={inputFit.containerRef} className="min-h-[3.5rem] w-full overflow-hidden">
-            <div
-              ref={inputFit.textRef as React.RefObject<HTMLDivElement>}
-              className="mx-auto flex w-max items-center justify-center gap-0.5 text-center font-mono font-bold tabular-nums text-text"
-              style={{ fontSize: `${inputFit.fontSize}rem` }}
-            >
-              <span>{input.slice(0, caretPos)}</span>
-              <span
-                className="live-loop inline-block h-[0.85em] w-[3px] shrink-0 bg-accent-number"
-                style={{ animation: 'caret-blink 1s step-end infinite' }}
-              />
-              <span>{input.slice(caretPos)}</span>
-            </div>
+          <div
+            ref={inputFit.containerRef}
+            className={`min-h-[3.5rem] w-full overflow-hidden ${noSelectClass}`}
+            style={{ fontSize: `${inputFit.fontSize}rem` }}
+            {...blockCopy}
+          >
+            {showTwoLines ? (
+              <>
+                <div className="mx-auto flex w-max items-center justify-center gap-0.5 text-center font-mono font-bold tabular-nums text-text">
+                  <CaretLine text={inputLine1} caretIndex={caretPos <= mid ? caretPos : null} />
+                </div>
+                <div className="mx-auto flex w-max items-center justify-center gap-0.5 text-center font-mono font-bold tabular-nums text-text">
+                  <CaretLine text={inputLine2} caretIndex={caretPos > mid ? caretPos - mid : null} />
+                </div>
+              </>
+            ) : (
+              <div className="mx-auto flex w-max items-center justify-center gap-0.5 text-center font-mono font-bold tabular-nums text-text">
+                <CaretLine text={input} caretIndex={caretPos} />
+              </div>
+            )}
           </div>
           <input
             ref={inputRef}
