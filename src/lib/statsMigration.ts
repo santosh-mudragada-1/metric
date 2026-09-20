@@ -61,5 +61,9 @@ export async function migrateLocalBestsIfNeeded(userId: string): Promise<void> {
   }
 
   const { error } = await supabase.from('game_results').insert(rows)
-  if (!error) setStatsMigrated()
+  if (!error) {
+    setStatsMigrated()
+  } else {
+    console.error('Failed to migrate local bests to Supabase:', error)
+  }
 }
