@@ -99,16 +99,28 @@ export function generateAimTargets(count: number = AIM_TRAINER.targetCount): Aim
   return targets
 }
 
-export function generateSequence(length: number, gridSize: number = SEQUENCE_MEMORY.gridSize): number[] {
-  const sequence: number[] = []
-  for (let i = 0; i < length; i++) {
-    sequence.push(Math.floor(Math.random() * gridSize))
-  }
-  return sequence
+// Picking each tile fully independently (uniform random with replacement) tends to produce
+// visible streaks and lopsided coverage over a small grid — a handful of tiles dominate while
+// others barely appear, which reads as a "predictable" pattern rather than a hard one. Drawing
+// from a shuffled bag (each tile exactly once per gridSize picks, never repeating across the
+// bag boundary) keeps every tile in play and avoids back-to-back repeats, so the sequence stays
+// genuinely unpredictable instead of clustering around a few positions.
+export function extendSequence(sequence: number[], gridSize: number = SEQUENCE_MEMORY.gridSize): number[] {
+  const posInBag = sequence.length % gridSize
+  const usedInBag = posInBag === 0 ? [] : sequence.slice(sequence.length - posInBag)
+  const remaining = Array.from({ length: gridSize }, (_, i) => i).filter((tile) => !usedInBag.includes(tile))
+  const prev = sequence[sequence.length - 1]
+  const pool = posInBag === 0 && prev !== undefined ? remaining.filter((tile) => tile !== prev) : remaining
+  const next = pool[Math.floor(Math.random() * pool.length)]
+  return [...sequence, next]
 }
 
-export function extendSequence(sequence: number[], gridSize: number = SEQUENCE_MEMORY.gridSize): number[] {
-  return [...sequence, Math.floor(Math.random() * gridSize)]
+export function generateSequence(length: number, gridSize: number = SEQUENCE_MEMORY.gridSize): number[] {
+  let sequence: number[] = []
+  for (let i = 0; i < length; i++) {
+    sequence = extendSequence(sequence, gridSize)
+  }
+  return sequence
 }
 
 export function generateNumber(digitCount: number): string {

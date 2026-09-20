@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { numberDisplayMs } from '@shared/gameConfig'
 import { Button } from '@/components/ui/Button'
 import { NumberPreview } from '@/components/previews/NumberPreview'
+import { useFitText } from '@/hooks/useFitText'
 import { DigitDisplay } from './DigitDisplay'
 import type { NumberPhase } from './useNumberMemorySolo'
 
@@ -33,10 +34,19 @@ export function NumberMemoryBoard({
   onSubmit,
 }: NumberMemoryBoardProps) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const [caretPos, setCaretPos] = useState(0)
+  const showingFit = useFitText(currentNumber, 7, 1.5)
+  const inputFit = useFitText(input, 4, 1.5)
 
   useEffect(() => {
     if (phase === 'input') inputRef.current?.focus()
   }, [phase])
+
+  useEffect(() => {
+    if (phase === 'input') setCaretPos(0)
+  }, [phase])
+
+  const syncCaret = (el: HTMLInputElement) => setCaretPos(el.selectionStart ?? el.value.length)
 
   return (
     <div className="relative flex h-[65vh] min-h-96 max-h-[38rem] flex-col items-center justify-center gap-5 overflow-hidden rounded-panel border border-border bg-surface p-6 text-center">
@@ -66,7 +76,15 @@ export function NumberMemoryBoard({
 
       {phase === 'showing' && (
         <div className="flex w-full max-w-xs flex-col items-center gap-4">
-          <p className="font-mono text-readout font-bold tabular-nums text-text">{currentNumber}</p>
+          <div ref={showingFit.containerRef} className="w-full overflow-hidden">
+            <p
+              ref={showingFit.textRef as React.RefObject<HTMLParagraphElement>}
+              className="whitespace-nowrap text-center font-mono font-bold tabular-nums text-text"
+              style={{ fontSize: `${showingFit.fontSize}rem` }}
+            >
+              {currentNumber}
+            </p>
+          </div>
           <div className="h-1 w-full overflow-hidden rounded-full bg-surface-hover">
             <div
               key={currentNumber}
@@ -83,17 +101,28 @@ export function NumberMemoryBoard({
           className="flex w-full max-w-2xl cursor-text flex-col items-center gap-5 px-2"
         >
           <p className="font-mono text-xs tracking-[0.14em] text-text-dim uppercase">type the number you saw</p>
-          <div className="flex min-h-[3.5rem] w-full items-center justify-center gap-0.5 [overflow-wrap:anywhere] text-center font-mono text-3xl font-bold tabular-nums text-text sm:text-4xl">
-            <span>{input}</span>
-            <span
-              className="live-loop inline-block h-[0.85em] w-[3px] shrink-0 bg-accent-number"
-              style={{ animation: 'caret-blink 1s step-end infinite' }}
-            />
+          <div ref={inputFit.containerRef} className="min-h-[3.5rem] w-full overflow-hidden">
+            <div
+              ref={inputFit.textRef as React.RefObject<HTMLDivElement>}
+              className="mx-auto flex w-max items-center justify-center gap-0.5 text-center font-mono font-bold tabular-nums text-text"
+              style={{ fontSize: `${inputFit.fontSize}rem` }}
+            >
+              <span>{input.slice(0, caretPos)}</span>
+              <span
+                className="live-loop inline-block h-[0.85em] w-[3px] shrink-0 bg-accent-number"
+                style={{ animation: 'caret-blink 1s step-end infinite' }}
+              />
+              <span>{input.slice(caretPos)}</span>
+            </div>
           </div>
           <input
             ref={inputRef}
             value={input}
-            onChange={(e) => onInputChange(e.target.value)}
+            onChange={(e) => {
+              onInputChange(e.target.value)
+              syncCaret(e.target)
+            }}
+            onSelect={(e) => syncCaret(e.currentTarget)}
             onKeyDown={(e) => e.key === 'Enter' && onSubmit()}
             inputMode="numeric"
             autoFocus

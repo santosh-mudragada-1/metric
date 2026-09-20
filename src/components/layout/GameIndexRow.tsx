@@ -72,7 +72,7 @@ export function GameIndexRow({ game, index }: { game: GameConfig; index: number 
         <AnimatedHeading
           as="h3"
           text={game.name}
-          className={`truncate font-display text-3xl font-semibold lowercase tracking-tight text-text transition-colors duration-200 sm:text-6xl ${ACCENT_TEXT[game.accent]}`}
+          className={`truncate font-display text-3xl font-semibold lowercase tracking-tight text-text transition-colors duration-200 sm:text-6xl sm:leading-[1.2] ${ACCENT_TEXT[game.accent]}`}
           radius={190}
         />
         <p className="mt-1 truncate text-sm text-text-muted sm:text-base">{game.blurb}</p>
