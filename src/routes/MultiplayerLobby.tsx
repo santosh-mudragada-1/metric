@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from 'react'
+import { type ReactNode, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { ArrowRightCircleIcon, PlusIcon } from '@heroicons/react/24/outline'
 import { GamePicker } from '@/multiplayer/GamePicker'
@@ -7,8 +7,8 @@ import { Card } from '@/components/ui/Card'
 import { Switch } from '@/components/ui/Switch'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { useAnimation } from '@/hooks/useAnimation'
-import { hoverIn, hoverOut, pressDown, pressUp } from '@/lib/animation/presets'
-import { playClick, playHover } from '@/lib/sound/sfx'
+import { hoverIn, hoverOut, pressDown, pressUp, shakeError } from '@/lib/animation/presets'
+import { playClick, playFail, playHover } from '@/lib/sound/sfx'
 import { useProfile } from '@/hooks/useProfile'
 import { generateRoomCode } from '@/lib/roomCode'
 import { withViewTransition } from '@/lib/viewTransition'
@@ -43,13 +43,11 @@ function OptionCard({
   title,
   description,
   glyph,
-  disabled,
   onClick,
 }: {
   title: string
   description: string
   glyph: ReactNode
-  disabled?: boolean
   onClick: () => void
 }) {
   const { scope, run } = useAnimation<HTMLButtonElement>()
@@ -58,7 +56,6 @@ function OptionCard({
     <button
       ref={scope}
       type="button"
-      disabled={disabled}
       onPointerDown={run(() => pressDown(scope.current))}
       onPointerUp={run(() => pressUp(scope.current))}
       onPointerLeave={run(() => pressUp(scope.current))}
@@ -67,14 +64,10 @@ function OptionCard({
         playHover()
       })}
       onMouseLeave={run(() => hoverOut(scope.current))}
-      onClick={() => {
-        playClick()
-        onClick()
-      }}
+      onClick={onClick}
       className="flex min-h-56 cursor-pointer flex-col items-start justify-between gap-8 rounded-panel border
         border-border bg-surface p-7 text-left shadow-[var(--shadow-card)] transition-colors
-        hover:border-border-strong hover:bg-surface-raised disabled:pointer-events-none disabled:cursor-default
-        disabled:opacity-40 sm:min-h-64 sm:p-9"
+        hover:border-border-strong hover:bg-surface-raised sm:min-h-64 sm:p-9"
     >
       {glyph}
       <div>
@@ -98,7 +91,11 @@ export default function MultiplayerLobby() {
   const [maxPlayers, setMaxPlayers] = useState(8)
   const [eliminationMode, setEliminationMode] = useState(false)
   const [joinCode, setJoinCode] = useState('')
+  const nameInputRef = useRef<HTMLInputElement>(null)
+  const { scope: nameFieldScope, run: runNameFieldAnim } = useAnimation<HTMLDivElement>()
 
+  // Already set (from a prior party visit, or right after sign-up) — no need to ask again.
+  const hasSavedName = profile.name.trim().length > 0
   const canProceed = name.trim().length > 0
 
   const commitName = () => {
@@ -107,9 +104,19 @@ export default function MultiplayerLobby() {
     return trimmed
   }
 
+  const nudgeForName = () => {
+    playFail()
+    if (nameFieldScope.current) runNameFieldAnim(() => shakeError(nameFieldScope.current))()
+    nameInputRef.current?.focus()
+  }
+
   const createRoom = () => {
     const trimmed = commitName()
-    if (!trimmed) return
+    if (!trimmed) {
+      nudgeForName()
+      return
+    }
+    playClick()
     const code = generateRoomCode()
     const params = new URLSearchParams({
       game: selectedGame,
@@ -123,7 +130,11 @@ export default function MultiplayerLobby() {
 
   const joinRoom = () => {
     const trimmed = commitName()
-    if (!trimmed || joinCode.trim().length === 0) return
+    if (!trimmed || joinCode.trim().length === 0) {
+      if (!trimmed) nudgeForName()
+      return
+    }
+    playClick()
     withViewTransition(() => navigate(`/party/${joinCode.trim().toUpperCase()}`))
   }
 
@@ -144,35 +155,50 @@ export default function MultiplayerLobby() {
 
       {mode === 'choose' && (
         <>
-          <div className="mb-10 max-w-xs">
-            <label className="mb-2 block font-mono text-[0.6875rem] tracking-[0.14em] text-text-dim uppercase">
-              Your name
-            </label>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onBlur={commitName}
-              maxLength={16}
-              placeholder="Enter a display name"
-              className="w-full rounded-full border border-border-strong bg-surface-raised px-4 py-3
-                text-text outline-none focus:border-invert/60"
-            />
-          </div>
+          {!hasSavedName && (
+            <div ref={nameFieldScope} className="mb-10 max-w-xs">
+              <label className="mb-2 block font-mono text-[0.6875rem] tracking-[0.14em] text-text-dim uppercase">
+                Your name
+              </label>
+              <input
+                ref={nameInputRef}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onBlur={commitName}
+                maxLength={16}
+                placeholder="Enter a display name"
+                className="w-full rounded-full border border-border-strong bg-surface-raised px-4 py-3
+                  text-text outline-none focus:border-invert/60"
+              />
+            </div>
+          )}
 
           <div className="grid max-w-3xl grid-cols-1 gap-5 sm:grid-cols-2">
             <OptionCard
               title="create a room"
               description="Pick a game, rounds, timer, and player limit — then share a code."
               glyph={<CreateGlyph />}
-              disabled={!canProceed}
-              onClick={() => setMode('create')}
+              onClick={() => {
+                if (!canProceed) {
+                  nudgeForName()
+                  return
+                }
+                playClick()
+                setMode('create')
+              }}
             />
             <OptionCard
               title="join a room"
               description="Already have a 5-character code? Jump straight in."
               glyph={<JoinGlyph />}
-              disabled={!canProceed}
-              onClick={() => setMode('join')}
+              onClick={() => {
+                if (!canProceed) {
+                  nudgeForName()
+                  return
+                }
+                playClick()
+                setMode('join')
+              }}
             />
           </div>
         </>

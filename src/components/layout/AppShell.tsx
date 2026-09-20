@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { AccountMenu } from '@/components/auth/AccountMenu'
 import { AddPasskeyPrompt } from '@/components/auth/AddPasskeyPrompt'
 import { AuthModal } from '@/components/auth/AuthModal'
+import { NamePrompt } from '@/components/auth/NamePrompt'
 import { useAuth } from '@/hooks/useAuth'
 import { useSound } from '@/hooks/useSound'
 import { useTheme } from '@/hooks/useTheme'
@@ -23,6 +24,7 @@ export function AppShell() {
   const { theme, toggleTheme } = useTheme()
   const { user } = useAuth()
   const [authOpen, setAuthOpen] = useState(false)
+  const [nameResolved, setNameResolved] = useState(false)
   const location = useLocation()
   const outletRef = useRef<HTMLDivElement>(null)
 
@@ -86,7 +88,8 @@ export function AppShell() {
         <Outlet />
       </main>
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
-      <AddPasskeyPrompt />
+      <NamePrompt onResolved={() => setNameResolved(true)} />
+      {nameResolved && <AddPasskeyPrompt />}
     </div>
   )
 }
