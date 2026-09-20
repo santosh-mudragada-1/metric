@@ -1,0 +1,42 @@
+<!--
+  First-time signup confirmation email (Supabase sends THIS template, not "Magic Link",
+  for a brand-new email address going through signInWithOtp — magic-link.html only fires
+  for returning users). Same brand treatment, worded for a new account instead of a return visit.
+-->
+<div style="background-color:#f5f5f2;padding:40px 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:440px;margin:0 auto;">
+    <tr>
+      <td style="padding-bottom:28px;text-align:center;">
+        <img src="https://metric-mocha.vercel.app/logo.png" width="36" height="36" alt="Metric" style="display:inline-block;" />
+      </td>
+    </tr>
+    <tr>
+      <td style="background-color:#ffffff;border:1px solid #e5e5e2;border-radius:24px;padding:40px 32px;text-align:center;">
+        <p style="margin:0 0 8px;font-size:11px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#9a9aa1;">
+          Metric
+        </p>
+        <h1 style="margin:0 0 16px;font-size:24px;font-weight:700;letter-spacing:-0.01em;color:#08080a;">
+          Confirm your email to start playing
+        </h1>
+        <p style="margin:0 0 28px;font-size:15px;line-height:1.6;color:#5c5c62;">
+          One click and you're in. This link expires shortly and can only be used once.
+        </p>
+        <a href="{{ .ConfirmationURL }}"
+          style="display:inline-block;background-color:#ff5a1f;color:#ffffff;font-size:15px;font-weight:600;
+          text-decoration:none;padding:14px 32px;border-radius:999px;">
+          Confirm &amp; start playing
+        </a>
+        <p style="margin:28px 0 0;font-size:13px;line-height:1.6;color:#9a9aa1;">
+          Didn't sign up for Metric? You can safely ignore this email.
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding-top:24px;text-align:center;">
+        <p style="margin:0;font-size:12px;color:#9a9aa1;">
+          Measure your mind — reaction, aim, memory, and recall.
+        </p>
+      </td>
+    </tr>
+  </table>
+</div>
