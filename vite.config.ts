@@ -13,5 +13,8 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    // Reachable from other devices on the LAN (e.g. a phone joining a party
+    // created on desktop) — default Vite only binds to localhost.
+    host: true,
   },
 })

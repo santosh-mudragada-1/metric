@@ -18,7 +18,7 @@ class AudioEngine {
     const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
     this.context = new Ctor()
     this.master = this.context.createGain()
-    this.master.gain.value = this.mutedState ? 0 : 0.35
+    this.master.gain.value = this.mutedState ? 0 : 0.6
     this.master.connect(this.context.destination)
     this.unlocked = true
   }
@@ -43,7 +43,7 @@ class AudioEngine {
   setMuted(muted: boolean): void {
     this.mutedState = muted
     if (this.master && this.context) {
-      this.master.gain.setTargetAtTime(muted ? 0 : 0.35, this.context.currentTime, 0.02)
+      this.master.gain.setTargetAtTime(muted ? 0 : 0.6, this.context.currentTime, 0.02)
     }
   }
 }

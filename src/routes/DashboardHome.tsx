@@ -40,7 +40,8 @@ export default function DashboardHome() {
 
         <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between">
           <p className="max-w-sm text-base leading-relaxed text-text-muted">
-            Reaction, aim, memory, and recall. Measured in milliseconds, accuracy, and speed.
+            How fast you react, how much you remember, how steady your hands are — timed down to
+            the millisecond, tracked run after run.
           </p>
           <button
             ref={scope}

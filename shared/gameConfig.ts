@@ -1,5 +1,25 @@
-import type { GameResult } from './types'
+import type { DeviceType, GameId, GameResult, Player } from './types'
 import { WORD_BANK } from './wordBank'
+
+/**
+ * Games where touch input (mobile/tablet) vs. mouse+keyboard (desktop) meaningfully changes
+ * how fast or precise a player can be — disabled in a room once players span more than one
+ * device type, so nobody's stuck competing on an uneven playing field.
+ */
+export const DEVICE_SENSITIVE_GAMES: GameId[] = ['reaction-time', 'aim-trainer', 'typing']
+
+export function connectedDeviceTypes(players: Player[]): Set<DeviceType> {
+  return new Set(players.filter((p) => p.connected).map((p) => p.device))
+}
+
+export function hasMixedDevices(players: Player[]): boolean {
+  return connectedDeviceTypes(players).size > 1
+}
+
+export function isGameAllowedForPlayers(gameId: GameId, players: Player[]): boolean {
+  if (!DEVICE_SENSITIVE_GAMES.includes(gameId)) return true
+  return !hasMixedDevices(players)
+}
 
 export const REACTION_TIME = {
   rounds: 5,

@@ -102,6 +102,14 @@ export function setMuted(muted: boolean): void {
   write('muted', muted)
 }
 
+export function getStatsMigrated(): boolean {
+  return read<boolean>('statsMigrated', false)
+}
+
+export function setStatsMigrated(): void {
+  write('statsMigrated', true)
+}
+
 export type Theme = 'dark' | 'light'
 
 export function getStoredTheme(): Theme | null {

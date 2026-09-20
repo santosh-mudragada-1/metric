@@ -11,7 +11,7 @@ function guarded(fn: () => void): void {
 }
 
 export function playHover(): void {
-  guarded(() => tone({ freq: 720, type: 'sine', duration: 0.04, peakGain: 0.12, release: 0.03 }))
+  guarded(() => tone({ freq: 720, type: 'sine', duration: 0.04, peakGain: 0.24, release: 0.03 }))
 }
 
 export function playClick(): void {
@@ -78,7 +78,7 @@ export function playCopy(): void {
 }
 
 export function playHeadingHover(): void {
-  guarded(() => tone({ freq: 380, type: 'sine', duration: 0.12, peakGain: 0.06, release: 0.18 }))
+  guarded(() => tone({ freq: 380, type: 'sine', duration: 0.12, peakGain: 0.16, release: 0.18 }))
 }
 
 const HEADING_BASE_FREQ = 520
@@ -91,7 +91,7 @@ export function playHeadingTick(index: number): void {
     const step = HEADING_SCALE_STEPS[index % HEADING_SCALE_STEPS.length]
     const octave = Math.floor(index / HEADING_SCALE_STEPS.length) % 2
     const freq = HEADING_BASE_FREQ * Math.pow(HEADING_SEMITONE, step + octave * 12)
-    tone({ freq, type: 'sine', duration: 0.03, peakGain: 0.05, release: 0.04 })
+    tone({ freq, type: 'sine', duration: 0.03, peakGain: 0.13, release: 0.04 })
   })
 }
 
@@ -108,9 +108,9 @@ export function playRainbowHover(): void {
   guarded(() => {
     RAINBOW_STEPS.forEach((step, i) => {
       const freq = RAINBOW_BASE_FREQ * Math.pow(RAINBOW_SEMITONE, step)
-      tone({ freq, type: 'sine', duration: 0.05, peakGain: 0.18 - i * 0.014, release: 0.06, delay: i * 0.016 })
+      tone({ freq, type: 'sine', duration: 0.05, peakGain: 0.3 - i * 0.022, release: 0.06, delay: i * 0.016 })
     })
-    tone({ freq: RAINBOW_BASE_FREQ * 4, type: 'triangle', duration: 0.09, peakGain: 0.1, release: 0.14, delay: 0.02 })
-    noiseBurst({ duration: 0.07, filterFreq: 7000, filterType: 'highpass', peakGain: 0.06 })
+    tone({ freq: RAINBOW_BASE_FREQ * 4, type: 'triangle', duration: 0.09, peakGain: 0.18, release: 0.14, delay: 0.02 })
+    noiseBurst({ duration: 0.07, filterFreq: 7000, filterType: 'highpass', peakGain: 0.1 })
   })
 }

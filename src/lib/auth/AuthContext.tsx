@@ -1,6 +1,7 @@
 import { createContext, useEffect, useState, type ReactNode } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { isSupabaseConfigured, supabase } from '@/lib/supabase'
+import { migrateLocalBestsIfNeeded } from '@/lib/statsMigration'
 
 export interface AuthResult {
   error?: string
@@ -52,6 +53,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
     return () => subscription.subscription.unsubscribe()
   }, [])
+
+  // Backfill any pre-sign-in guest bests so the stats page reflects what the home page already shows.
+  useEffect(() => {
+    if (user) void migrateLocalBestsIfNeeded(user.id)
+  }, [user])
 
   const signInWithGoogle = async (): Promise<AuthResult> => {
     if (!supabase) return NOT_CONFIGURED

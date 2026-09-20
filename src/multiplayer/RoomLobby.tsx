@@ -1,4 +1,5 @@
 import { CheckCircleIcon, StarIcon } from '@heroicons/react/24/solid'
+import { ComputerDesktopIcon, DevicePhoneMobileIcon, DeviceTabletIcon } from '@heroicons/react/24/outline'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { CopyableCode } from '@/components/ui/CopyableCode'
@@ -6,7 +7,29 @@ import { AnimatedHeading } from '@/components/ui/AnimatedHeading'
 import { GamePicker } from '@/multiplayer/GamePicker'
 import { GAME_MAP } from '@/games.config'
 import { useProfile } from '@/hooks/useProfile'
+import { DEVICE_SENSITIVE_GAMES, hasMixedDevices } from '@shared/gameConfig'
+import type { DeviceType } from '@shared/types'
 import { usePartyRoom } from './usePartyRoom'
+
+const DEVICE_ICONS: Record<DeviceType, typeof ComputerDesktopIcon> = {
+  desktop: ComputerDesktopIcon,
+  mobile: DevicePhoneMobileIcon,
+  tablet: DeviceTabletIcon,
+}
+
+const DEVICE_LABELS: Record<DeviceType, string> = {
+  desktop: 'Desktop',
+  mobile: 'Mobile',
+  tablet: 'Tablet',
+}
+
+function DeviceIcon({ device }: { device: DeviceType }) {
+  const Icon = DEVICE_ICONS[device]
+  return <Icon className="h-3.5 w-3.5 shrink-0 text-text-dim" title={DEVICE_LABELS[device]} />
+}
+
+const LOCKED_GAME_REASON =
+  'Disabled — players joined from different device types (touch vs. mouse/keyboard), which would give one side an unfair advantage.'
 
 export function RoomLobby() {
   const { state, send } = usePartyRoom()
@@ -18,6 +41,8 @@ export function RoomLobby() {
   const connectedPlayers = state.players.filter((p) => p.connected)
   const allReady = connectedPlayers.length > 0 && connectedPlayers.every((p) => p.ready)
   const game = GAME_MAP[state.gameId]
+  const mixedDevices = hasMixedDevices(state.players)
+  const currentGameLocked = mixedDevices && DEVICE_SENSITIVE_GAMES.includes(state.gameId)
 
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -38,6 +63,7 @@ export function RoomLobby() {
               <div className="flex min-w-0 items-center gap-2.5">
                 <span className={`h-2 w-2 shrink-0 rounded-full ${player.ready ? 'bg-success' : 'bg-text-dim'}`} />
                 {player.isHost && <StarIcon className="h-3.5 w-3.5 shrink-0 text-accent-number" />}
+                <DeviceIcon device={player.device} />
                 <span className="truncate font-display text-base font-medium text-text">{player.name}</span>
                 {player.id === profile.clientPlayerId && <span className="shrink-0 text-xs text-text-dim">(you)</span>}
               </div>
@@ -74,7 +100,24 @@ export function RoomLobby() {
               <label className="mb-2 block font-mono text-[0.6875rem] tracking-[0.14em] text-text-dim uppercase">
                 Game
               </label>
-              <GamePicker value={state.gameId} onChange={(gameId) => send({ type: 'hostChangeGame', gameId })} />
+              <GamePicker
+                value={state.gameId}
+                onChange={(gameId) => send({ type: 'hostChangeGame', gameId })}
+                lockedGameIds={mixedDevices ? DEVICE_SENSITIVE_GAMES : undefined}
+                lockedReason={LOCKED_GAME_REASON}
+              />
+              {mixedDevices && (
+                <p className="mt-2 text-xs text-text-muted">
+                  Reaction Time, Aim Trainer, and Typing are disabled — players joined from different device types
+                  (mobile/tablet touch vs. desktop mouse and keyboard) would have an unfair advantage. They'll unlock
+                  automatically once everyone's on the same type of device.
+                </p>
+              )}
+              {currentGameLocked && (
+                <p className="mt-2 text-xs text-signal">
+                  {game.name} just became unfair for this room's mix of devices — pick another game before starting.
+                </p>
+              )}
             </div>
             <div>
               <div className="mb-2 flex items-baseline justify-between">
@@ -144,11 +187,11 @@ export function RoomLobby() {
             <Button
               variant="primary"
               chevron
-              disabled={!allReady}
+              disabled={!allReady || currentGameLocked}
               onClick={() => send({ type: 'hostStartRound' })}
               className="mt-auto"
             >
-              {allReady ? 'Start game' : 'Waiting for everyone to be ready'}
+              {currentGameLocked ? 'Pick a different game' : allReady ? 'Start game' : 'Waiting for everyone to be ready'}
             </Button>
           </>
         ) : (

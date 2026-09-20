@@ -64,6 +64,8 @@ export type GameResult =
   | VerbalMemoryResult
   | VisualMemoryResult
 
+export type DeviceType = 'desktop' | 'mobile' | 'tablet'
+
 export interface Player {
   id: string
   name: string
@@ -71,6 +73,7 @@ export interface Player {
   ready: boolean
   connected: boolean
   eliminated: boolean
+  device: DeviceType
 }
 
 export type RoomPhase = 'lobby' | 'countdown' | 'playing' | 'roundResult' | 'finished'

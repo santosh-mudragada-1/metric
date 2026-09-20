@@ -1,7 +1,7 @@
 import type * as Party from 'partykit/server'
 import type { ClientMessage, ServerMessage } from '../../shared/protocol'
 import type { GameId, GameResult, Player, RoomState } from '../../shared/types'
-import { scoreOf } from '../../shared/gameConfig'
+import { isGameAllowedForPlayers, scoreOf } from '../../shared/gameConfig'
 import { generateRoundContent as reactionTimeContent } from '../games/reactionTime'
 import { generateRoundContent as aimTrainerContent } from '../games/aimTrainer'
 import { generateRoundContent as sequenceMemoryContent } from '../games/sequenceMemory'
@@ -158,6 +158,7 @@ export default class GameRoom implements Party.Server {
         if (existing) {
           existing.connected = true
           existing.name = message.name || existing.name
+          existing.device = message.device
         } else {
           if (this.state.players.length >= this.state.maxPlayers) {
             this.send(sender, { type: 'error', message: 'This room is full.' })
@@ -171,6 +172,7 @@ export default class GameRoom implements Party.Server {
             ready: false,
             connected: true,
             eliminated: false,
+            device: message.device,
           })
         }
         this.ensureHost()
@@ -190,6 +192,13 @@ export default class GameRoom implements Party.Server {
       case 'hostChangeGame': {
         const player = sender.state && this.getPlayer(sender.state.clientPlayerId)
         if (!player?.isHost || !['lobby', 'finished'].includes(this.state.phase)) return
+        if (!isGameAllowedForPlayers(message.gameId, this.state.players)) {
+          this.send(sender, {
+            type: 'error',
+            message: 'That game is disabled — players joined from different device types.',
+          })
+          return
+        }
         this.state.gameId = message.gameId
         this.broadcast()
         break
@@ -234,6 +243,16 @@ export default class GameRoom implements Party.Server {
         const player = sender.state && this.getPlayer(sender.state.clientPlayerId)
         if (!player?.isHost) return
         if (!['lobby', 'roundResult', 'finished'].includes(this.state.phase)) return
+        if (
+          (this.state.phase === 'lobby' || this.state.phase === 'finished') &&
+          !isGameAllowedForPlayers(this.state.gameId, this.state.players)
+        ) {
+          this.send(sender, {
+            type: 'error',
+            message: 'That game is disabled — players joined from different device types. Pick another game.',
+          })
+          return
+        }
         if (this.state.phase === 'lobby' || this.state.phase === 'finished') {
           this.state.round = 0
           this.state.leaderboard = []

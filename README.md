@@ -2,6 +2,26 @@
 
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 
+## Multiplayer (party rooms)
+
+Party rooms run on [PartyKit](https://partykit.io) (`party/rooms/gameRoom.ts`). Locally:
+
+```
+npm run dev:all   # runs vite (5173) and `partykit dev` (1999) together
+```
+
+The client connects to `VITE_PARTYKIT_HOST`, falling back to the page's own hostname on port
+1999 when that env var isn't set. That fallback is what makes **testing across devices** work
+without config: open the app on your desktop via its LAN IP (e.g. `http://192.168.1.23:5173`,
+not `http://localhost:5173`) and a phone on the same Wi-Fi joining that same URL will correctly
+reach `192.168.1.23:1999` instead of hanging on "connecting to room" (which is what happens if
+the phone tries to resolve `localhost:1999` against itself).
+
+For production, deploy the party server (`npx partykit deploy`) and set `VITE_PARTYKIT_HOST` to
+the deployed host (e.g. `metric.yourname.partykit.dev`) in `.env.local` and in Vercel's
+environment variables — otherwise deployed clients will try to reach `localhost:1999` and never
+connect.
+
 ## Setting up sign-in (Google, email OTP, passkeys)
 
 Auth and per-player stats run on [Supabase](https://supabase.com). Without it configured, the app still works fully as a guest — sign-in UI shows "not configured yet" and games keep tracking local bests as before.

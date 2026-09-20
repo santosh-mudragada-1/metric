@@ -21,20 +21,6 @@ export interface GameConfig {
 
 export const GAMES: GameConfig[] = [
   {
-    id: 'reaction-time',
-    name: 'Reaction Time',
-    blurb: 'Wait for green. Click.',
-    Preview: ReactionPreview,
-    accent: 'reaction',
-  },
-  {
-    id: 'aim-trainer',
-    name: 'Aim Trainer',
-    blurb: 'Hit all 30 targets.',
-    Preview: AimPreview,
-    accent: 'aim',
-  },
-  {
     id: 'sequence-memory',
     name: 'Sequence Memory',
     blurb: 'Repeat the pattern.',
@@ -75,6 +61,20 @@ export const GAMES: GameConfig[] = [
     blurb: 'Type the passage fast.',
     Preview: TypingPreview,
     accent: 'typing',
+  },
+  {
+    id: 'reaction-time',
+    name: 'Reaction Time',
+    blurb: 'Wait for green. Click.',
+    Preview: ReactionPreview,
+    accent: 'reaction',
+  },
+  {
+    id: 'aim-trainer',
+    name: 'Aim Trainer',
+    blurb: 'Hit all 30 targets.',
+    Preview: AimPreview,
+    accent: 'aim',
   },
 ]
 
