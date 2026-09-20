@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { EnvelopeOpenIcon, KeyIcon } from '@heroicons/react/24/outline'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
@@ -19,6 +19,9 @@ const TITLES: Record<Mode, string> = {
   signup: 'Create your account',
 }
 
+/** Matches Supabase's own per-address SMTP cooldown, so the UI never lets you race past it. */
+const EMAIL_COOLDOWN_SECONDS = 60
+
 export function AuthModal({ open, onClose }: AuthModalProps) {
   const { configured, signInWithGoogle, sendMagicLink, signInWithPasskey } = useAuth()
   const [mode, setMode] = useState<Mode>('signin')
@@ -26,6 +29,17 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
   const [email, setEmail] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [cooldownUntil, setCooldownUntil] = useState<number | null>(null)
+  const [now, setNow] = useState(() => Date.now())
+
+  useEffect(() => {
+    if (!cooldownUntil) return
+    const id = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [cooldownUntil])
+
+  const secondsLeft = cooldownUntil ? Math.max(0, Math.ceil((cooldownUntil - now) / 1000)) : 0
+  const onCooldown = secondsLeft > 0
 
   const reset = () => {
     setMode('signin')
@@ -59,8 +73,10 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
   }
 
   const handleSendLink = async () => {
-    if (!email.trim()) return
-    if (await run(() => sendMagicLink(email.trim()))) setStep('sent')
+    if (!email.trim() || onCooldown) return
+    const ok = await run(() => sendMagicLink(email.trim()))
+    setCooldownUntil(Date.now() + EMAIL_COOLDOWN_SECONDS * 1000)
+    if (ok) setStep('sent')
   }
 
   const title = step === 'sent' ? 'Check your email' : TITLES[mode]
@@ -112,18 +128,22 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSendLink()}
-            disabled={!configured || busy}
+            disabled={!configured || busy || onCooldown}
             className="h-13 w-full rounded-full border border-border-strong bg-surface-raised px-4 text-sm text-text
               outline-none focus:border-invert/60 disabled:opacity-50"
           />
           <Button
             variant="primary"
             size="lg"
-            disabled={!configured || busy || !email.trim()}
+            disabled={!configured || busy || onCooldown || !email.trim()}
             onClick={handleSendLink}
             className="w-full"
           >
-            {mode === 'signin' ? 'Email me a sign-in link' : 'Create my account'}
+            {onCooldown
+              ? `Try again in ${secondsLeft}s`
+              : mode === 'signin'
+                ? 'Email me a sign-in link'
+                : 'Create my account'}
           </Button>
 
           <button
