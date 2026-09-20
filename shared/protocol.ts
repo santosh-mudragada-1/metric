@@ -6,9 +6,9 @@ export type ClientMessage =
   | { type: 'hostChangeGame'; gameId: GameId }
   | { type: 'hostSetRounds'; maxRounds: number }
   | { type: 'hostSetMaxPlayers'; maxPlayers: number }
-  | { type: 'hostSetRoundTimer'; roundTimeLimitMs: number }
   | { type: 'hostSetElimination'; eliminationMode: boolean }
   | { type: 'hostStartRound' }
+  | { type: 'hostKickPlayer'; playerId: string }
   | { type: 'submitResult'; result: GameResult }
 
 export type ServerMessage = { type: 'state'; state: RoomState } | { type: 'error'; message: string }

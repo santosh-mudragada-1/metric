@@ -14,6 +14,7 @@ export function PartyProvider({ roomCode, children }: { roomCode: string; childr
   const [state, setState] = useState<RoomState | null>(null)
   const [connected, setConnected] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [nudge, setNudge] = useState<{ playerIds: string[]; at: number } | null>(null)
   const profileRef = useRef(profile)
   profileRef.current = profile
 
@@ -63,11 +64,19 @@ export function PartyProvider({ roomCode, children }: { roomCode: string; childr
     [socket],
   )
 
+  const nudgePlayers = useCallback((playerIds: string[]) => {
+    setNudge({ playerIds, at: Date.now() })
+  }, [])
+
   useEffect(() => {
     if (socket.readyState === WebSocket.OPEN && profile.name) {
       send({ type: 'join', clientPlayerId: profile.clientPlayerId, name: profile.name, device: detectDeviceType() })
     }
   }, [profile.name, profile.clientPlayerId, socket, send])
 
-  return <PartyRoomContext.Provider value={{ state, connected, error, send }}>{children}</PartyRoomContext.Provider>
+  return (
+    <PartyRoomContext.Provider value={{ state, connected, error, send, nudge, nudgePlayers }}>
+      {children}
+    </PartyRoomContext.Provider>
+  )
 }

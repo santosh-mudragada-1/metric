@@ -191,20 +191,32 @@ export function generateTypingPassage(wordCount: number = TYPING.wordCount): str
   return words.join(' ')
 }
 
-export function scoreOf(result: GameResult): number {
+// Level-based games have no round timer to cap them, so two players can land on the same level.
+// A finish-time tiebreak (max 999) is added on top of the level score (worth 1000/level) — enough
+// to separate equal levels by speed, never enough to let a faster lower level outscore a higher one.
+const TIME_TIEBREAK_MAX = 999
+const TIME_TIEBREAK_STEP_MS = 100
+
+function timeTiebreak(elapsedMs: number | undefined): number {
+  if (elapsedMs === undefined) return 0
+  return Math.max(0, TIME_TIEBREAK_MAX - Math.floor(elapsedMs / TIME_TIEBREAK_STEP_MS))
+}
+
+/** `elapsedMs` (time since the round started) only applies to — and only matters for — the level-based games. */
+export function scoreOf(result: GameResult, elapsedMs?: number): number {
   switch (result.gameId) {
     case 'reaction-time':
       return Math.max(0, Math.round(1000 - result.averageMs))
     case 'aim-trainer':
       return Math.round(result.accuracy) + result.hits * 2
     case 'sequence-memory':
-      return result.levelReached * 10
+      return result.levelReached * 1000 + timeTiebreak(elapsedMs)
     case 'number-memory':
-      return result.digitsReached * 10
+      return result.digitsReached * 1000 + timeTiebreak(elapsedMs)
     case 'chimp-test':
-      return result.levelReached * 10
+      return result.levelReached * 1000 + timeTiebreak(elapsedMs)
     case 'visual-memory':
-      return result.levelReached * 10
+      return result.levelReached * 1000 + timeTiebreak(elapsedMs)
     case 'verbal-memory':
       return result.score * 5
     case 'typing':

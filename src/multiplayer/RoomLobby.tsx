@@ -1,5 +1,6 @@
+import { useEffect } from 'react'
 import { CheckCircleIcon, StarIcon } from '@heroicons/react/24/solid'
-import { ComputerDesktopIcon, DevicePhoneMobileIcon, DeviceTabletIcon } from '@heroicons/react/24/outline'
+import { ComputerDesktopIcon, DevicePhoneMobileIcon, DeviceTabletIcon, UserMinusIcon } from '@heroicons/react/24/outline'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { CopyableCode } from '@/components/ui/CopyableCode'
@@ -7,8 +8,11 @@ import { AnimatedHeading } from '@/components/ui/AnimatedHeading'
 import { GamePicker } from '@/multiplayer/GamePicker'
 import { GAME_MAP } from '@/games.config'
 import { useProfile } from '@/hooks/useProfile'
+import { useAnimation } from '@/hooks/useAnimation'
+import { shakeError } from '@/lib/animation/presets'
+import { playClick, playFail } from '@/lib/sound/sfx'
 import { DEVICE_SENSITIVE_GAMES, hasMixedDevices } from '@shared/gameConfig'
-import type { DeviceType } from '@shared/types'
+import type { DeviceType, Player } from '@shared/types'
 import { usePartyRoom } from './usePartyRoom'
 
 const DEVICE_ICONS: Record<DeviceType, typeof ComputerDesktopIcon> = {
@@ -31,36 +35,87 @@ function DeviceIcon({ device }: { device: DeviceType }) {
 const LOCKED_GAME_REASON =
   'Disabled — players joined from different device types (touch vs. mouse/keyboard), which would give one side an unfair advantage.'
 
-/** Rendered in the room header, beside the title — the host's start control, or a waiting indicator for everyone else. */
+/** Rendered in the room header, beside the title — the host's start control, or their own ready toggle for everyone else. */
 export function RoomLobbyAction() {
-  const { state, send } = usePartyRoom()
+  const { state, send, nudgePlayers } = usePartyRoom()
   const { profile } = useProfile()
   if (!state) return null
 
   const me = state.players.find((p) => p.id === profile.clientPlayerId)
   const isHost = me?.isHost ?? false
-  const connectedPlayers = state.players.filter((p) => p.connected)
-  const allReady = connectedPlayers.length > 0 && connectedPlayers.every((p) => p.ready)
-  const currentGameLocked = hasMixedDevices(state.players) && DEVICE_SENSITIVE_GAMES.includes(state.gameId)
 
   if (!isHost) {
     return (
-      <Button variant="ghost" disabled className="shrink-0">
-        Waiting for host
+      <Button
+        variant={me?.ready ? 'ghost' : 'primary'}
+        chevron
+        onClick={() => send({ type: 'setReady', ready: !me?.ready })}
+        className="shrink-0"
+      >
+        {me?.ready ? 'Not ready' : "I'm ready"}
       </Button>
     )
   }
 
+  const notReadyIds = state.players.filter((p) => p.connected && !p.isHost && !p.ready).map((p) => p.id)
+  const allReady = notReadyIds.length === 0
+  const currentGameLocked = hasMixedDevices(state.players) && DEVICE_SENSITIVE_GAMES.includes(state.gameId)
+
+  const onStart = () => {
+    if (currentGameLocked) return
+    if (!allReady) {
+      playFail()
+      nudgePlayers(notReadyIds)
+      return
+    }
+    send({ type: 'hostStartRound' })
+  }
+
   return (
-    <Button
-      variant="primary"
-      chevron
-      disabled={!allReady || currentGameLocked}
-      onClick={() => send({ type: 'hostStartRound' })}
-      className="shrink-0"
-    >
+    <Button variant="primary" chevron disabled={currentGameLocked} onClick={onStart} className="shrink-0">
       {currentGameLocked ? 'Pick a different game' : allReady ? 'Start game' : 'Waiting for everyone to be ready'}
     </Button>
+  )
+}
+
+function PlayerRow({ player, isMe, canKick, onKick }: { player: Player; isMe: boolean; canKick: boolean; onKick: () => void }) {
+  const { nudge } = usePartyRoom()
+  const { scope, run } = useAnimation<HTMLDivElement>()
+
+  useEffect(() => {
+    if (nudge?.playerIds.includes(player.id)) run(() => shakeError(scope.current))()
+  }, [nudge, player.id, run, scope])
+
+  return (
+    <div
+      ref={scope}
+      className={`flex items-center justify-between gap-3 py-3 ${player.connected ? '' : 'opacity-40'}`}
+    >
+      <div className="flex min-w-0 items-center gap-2.5">
+        <span className={`h-2 w-2 shrink-0 rounded-full ${player.ready ? 'bg-success' : 'bg-text-dim'}`} />
+        {player.isHost && <StarIcon className="h-3.5 w-3.5 shrink-0 text-accent-number" />}
+        <DeviceIcon device={player.device} />
+        <span className="truncate font-display text-base font-medium text-text">{player.name}</span>
+        {isMe && <span className="shrink-0 text-xs text-text-dim">(you)</span>}
+      </div>
+      <div className="flex shrink-0 items-center gap-3">
+        {player.ready ? (
+          <CheckCircleIcon className="h-4 w-4 shrink-0 text-success" />
+        ) : (
+          <span className="font-mono text-[0.6875rem] tracking-[0.1em] text-text-dim uppercase">not ready</span>
+        )}
+        {canKick && (
+          <button
+            type="button"
+            title="Remove from room"
+            onClick={onKick}
+            className="cursor-pointer text-text-dim transition-colors hover:text-danger"
+          >
+            <UserMinusIcon className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+    </div>
   )
 }
 
@@ -87,34 +142,18 @@ export function RoomLobby() {
 
         <div className="flex flex-col divide-y divide-border border-y border-border">
           {state.players.map((player) => (
-            <div
+            <PlayerRow
               key={player.id}
-              className={`flex items-center justify-between gap-3 py-3 ${player.connected ? '' : 'opacity-40'}`}
-            >
-              <div className="flex min-w-0 items-center gap-2.5">
-                <span className={`h-2 w-2 shrink-0 rounded-full ${player.ready ? 'bg-success' : 'bg-text-dim'}`} />
-                {player.isHost && <StarIcon className="h-3.5 w-3.5 shrink-0 text-accent-number" />}
-                <DeviceIcon device={player.device} />
-                <span className="truncate font-display text-base font-medium text-text">{player.name}</span>
-                {player.id === profile.clientPlayerId && <span className="shrink-0 text-xs text-text-dim">(you)</span>}
-              </div>
-              {player.ready ? (
-                <CheckCircleIcon className="h-4 w-4 shrink-0 text-success" />
-              ) : (
-                <span className="shrink-0 font-mono text-[0.6875rem] tracking-[0.1em] text-text-dim uppercase">
-                  not ready
-                </span>
-              )}
-            </div>
+              player={player}
+              isMe={player.id === profile.clientPlayerId}
+              canKick={isHost && !player.isHost}
+              onKick={() => {
+                playClick()
+                send({ type: 'hostKickPlayer', playerId: player.id })
+              }}
+            />
           ))}
         </div>
-
-        <Button
-          variant={me?.ready ? 'ghost' : 'primary'}
-          onClick={() => send({ type: 'setReady', ready: !me?.ready })}
-        >
-          {me?.ready ? 'Not ready' : "I'm ready"}
-        </Button>
       </Card>
 
       <Card className="flex flex-col gap-5 p-6 sm:p-7">
@@ -161,24 +200,6 @@ export function RoomLobby() {
                 max={10}
                 value={state.maxRounds}
                 onChange={(e) => send({ type: 'hostSetRounds', maxRounds: Number(e.target.value) })}
-                className="w-full"
-              />
-            </div>
-
-            <div>
-              <div className="mb-2 flex items-baseline justify-between">
-                <label className="font-mono text-[0.6875rem] tracking-[0.14em] text-text-dim uppercase">
-                  Timer per round
-                </label>
-                <span className="font-mono text-sm tabular-nums text-text">{state.roundTimeLimitMs / 1000}s</span>
-              </div>
-              <input
-                type="range"
-                min={15}
-                max={180}
-                step={5}
-                value={state.roundTimeLimitMs / 1000}
-                onChange={(e) => send({ type: 'hostSetRoundTimer', roundTimeLimitMs: Number(e.target.value) * 1000 })}
                 className="w-full"
               />
             </div>

@@ -15,9 +15,6 @@ interface ConnAttachment {
 }
 
 const COUNTDOWN_MS = 3200
-const DEFAULT_ROUND_TIME_LIMIT_MS = 90_000
-const MIN_ROUND_TIME_LIMIT_MS = 15_000
-const MAX_ROUND_TIME_LIMIT_MS = 180_000
 const DEFAULT_MAX_PLAYERS = 8
 const MIN_MAX_PLAYERS = 2
 const MAX_MAX_PLAYERS = 12
@@ -53,9 +50,9 @@ function initialState(code: string): RoomState {
     round: 0,
     maxRounds: 5,
     maxPlayers: DEFAULT_MAX_PLAYERS,
-    roundTimeLimitMs: DEFAULT_ROUND_TIME_LIMIT_MS,
     eliminationMode: false,
     roundResults: {},
+    roundElapsedMs: {},
     leaderboard: [],
   }
 }
@@ -117,6 +114,8 @@ export class GameRoom implements DurableObject {
   private async startCountdown(): Promise<void> {
     this.state.roundContent = generateRoundContent(this.state.gameId)
     this.state.roundResults = {}
+    this.state.roundElapsedMs = {}
+    this.state.roundStartedAt = undefined
     this.state.round += 1
     this.state.phase = 'countdown'
     this.state.countdownEndsAt = Date.now() + COUNTDOWN_MS
@@ -131,7 +130,9 @@ export class GameRoom implements DurableObject {
     if (active.length <= 1) return
     const scored = active.map((p) => ({
       id: p.id,
-      points: this.state.roundResults[p.id] ? scoreOf(this.state.roundResults[p.id]) : -Infinity,
+      points: this.state.roundResults[p.id]
+        ? scoreOf(this.state.roundResults[p.id], this.state.roundElapsedMs[p.id])
+        : -Infinity,
     }))
     const minPoints = Math.min(...scored.map((s) => s.points))
     const maxPoints = Math.max(...scored.map((s) => s.points))
@@ -151,27 +152,22 @@ export class GameRoom implements DurableObject {
     this.broadcast()
   }
 
+  /** There's no round timer — a round only ends once every connected, non-eliminated player has submitted. */
   private async maybeFinishRoundEarly(): Promise<void> {
     const connectedCount = this.state.players.filter((p) => p.connected && !p.eliminated).length
     if (connectedCount > 0 && Object.keys(this.state.roundResults).length >= connectedCount) {
-      await this.ctx.storage.deleteAlarm()
       await this.finishRound()
     }
   }
 
-  /** Fires when a scheduled countdown or round-timer elapses — see `startCountdown`/`onMessage`. */
+  /** Fires when the countdown scheduled in `startCountdown` elapses. */
   async alarm(): Promise<void> {
     await this.ready
-    if (this.state.phase === 'countdown') {
-      this.state.phase = 'playing'
-      await this.persist()
-      this.broadcast()
-      await this.ctx.storage.setAlarm(Date.now() + this.state.roundTimeLimitMs)
-      return
-    }
-    if (this.state.phase === 'playing') {
-      await this.finishRound()
-    }
+    if (this.state.phase !== 'countdown') return
+    this.state.phase = 'playing'
+    this.state.roundStartedAt = Date.now()
+    await this.persist()
+    this.broadcast()
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -270,18 +266,6 @@ export class GameRoom implements DurableObject {
         break
       }
 
-      case 'hostSetRoundTimer': {
-        const player = this.playerFor(ws)
-        if (!player?.isHost || !['lobby', 'finished'].includes(this.state.phase)) return
-        this.state.roundTimeLimitMs = Math.max(
-          MIN_ROUND_TIME_LIMIT_MS,
-          Math.min(MAX_ROUND_TIME_LIMIT_MS, message.roundTimeLimitMs),
-        )
-        await this.persist()
-        this.broadcast()
-        break
-      }
-
       case 'hostSetElimination': {
         const player = this.playerFor(ws)
         if (!player?.isHost || !['lobby', 'finished'].includes(this.state.phase)) return
@@ -295,17 +279,19 @@ export class GameRoom implements DurableObject {
         const player = this.playerFor(ws)
         if (!player?.isHost) return
         if (!['lobby', 'roundResult', 'finished'].includes(this.state.phase)) return
-        if (
-          (this.state.phase === 'lobby' || this.state.phase === 'finished') &&
-          !isGameAllowedForPlayers(this.state.gameId, this.state.players)
-        ) {
+        const isFreshStart = this.state.phase === 'lobby' || this.state.phase === 'finished'
+        if (isFreshStart && !isGameAllowedForPlayers(this.state.gameId, this.state.players)) {
           this.send(ws, {
             type: 'error',
             message: 'That game is disabled — players joined from different device types. Pick another game.',
           })
           return
         }
-        if (this.state.phase === 'lobby' || this.state.phase === 'finished') {
+        if (isFreshStart && !this.nonHostPlayersReady()) {
+          this.send(ws, { type: 'error', message: "Not everyone's ready yet." })
+          return
+        }
+        if (isFreshStart) {
           this.state.round = 0
           this.state.leaderboard = []
           this.state.players = this.state.players.map((p) => ({ ...p, eliminated: false }))
@@ -314,12 +300,30 @@ export class GameRoom implements DurableObject {
         break
       }
 
+      case 'hostKickPlayer': {
+        const player = this.playerFor(ws)
+        const target = this.getPlayer(message.playerId)
+        if (!player?.isHost || !target || target.isHost) return
+        this.state.players = this.state.players.filter((p) => p.id !== message.playerId)
+        for (const socket of this.ctx.getWebSockets()) {
+          if (this.attachmentOf(socket)?.clientPlayerId !== message.playerId) continue
+          this.send(socket, { type: 'error', message: 'You were removed from the room by the host.' })
+          socket.close(4001, 'Kicked from room')
+        }
+        await this.persist()
+        this.broadcast()
+        await this.maybeFinishRoundEarly()
+        break
+      }
+
       case 'submitResult': {
         const clientPlayerId = this.attachmentOf(ws)?.clientPlayerId
         const player = clientPlayerId ? this.getPlayer(clientPlayerId) : undefined
         if (!player || player.eliminated || this.state.phase !== 'playing') return
         this.state.roundResults[player.id] = message.result
-        this.applyLeaderboard(player.id, message.result)
+        const elapsedMs = this.state.roundStartedAt ? Date.now() - this.state.roundStartedAt : undefined
+        if (elapsedMs !== undefined) this.state.roundElapsedMs[player.id] = elapsedMs
+        this.applyLeaderboard(player.id, message.result, elapsedMs)
         await this.persist()
         this.broadcast()
         await this.maybeFinishRoundEarly()
@@ -328,15 +332,21 @@ export class GameRoom implements DurableObject {
     }
   }
 
+  /** The host doesn't toggle ready themselves — only connected non-host players need to be (if there are any). */
+  private nonHostPlayersReady(): boolean {
+    const nonHost = this.state.players.filter((p) => p.connected && !p.isHost)
+    return nonHost.every((p) => p.ready)
+  }
+
   private playerFor(ws: WebSocket): Player | undefined {
     const clientPlayerId = this.attachmentOf(ws)?.clientPlayerId
     return clientPlayerId ? this.getPlayer(clientPlayerId) : undefined
   }
 
-  private applyLeaderboard(playerId: string, result: GameResult): void {
+  private applyLeaderboard(playerId: string, result: GameResult, elapsedMs?: number): void {
     const player = this.getPlayer(playerId)
     if (!player) return
-    const points = scoreOf(result)
+    const points = scoreOf(result, elapsedMs)
     const existing = this.state.leaderboard.find((e) => e.playerId === playerId)
     if (existing) {
       existing.totalScore += points

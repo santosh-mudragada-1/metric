@@ -93,10 +93,13 @@ export interface RoomState {
   round: number
   maxRounds: number
   maxPlayers: number
-  roundTimeLimitMs: number
   eliminationMode: boolean
   countdownEndsAt?: number
+  /** When the current round entered `playing` — used to score how fast each player finished. */
+  roundStartedAt?: number
   roundContent?: unknown
   roundResults: Record<string, GameResult>
+  /** How long each player took to submit this round, in ms since `roundStartedAt` — see `scoreOf`. */
+  roundElapsedMs: Record<string, number>
   leaderboard: LeaderboardEntry[]
 }

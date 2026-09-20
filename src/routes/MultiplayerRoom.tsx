@@ -1,6 +1,5 @@
-import { useEffect, useRef } from 'react'
-import { Navigate, useParams, useSearchParams } from 'react-router'
-import { GAME_MAP, isGameId } from '@/games.config'
+import { Navigate, useParams } from 'react-router'
+import { GAME_MAP } from '@/games.config'
 import type { GameId } from '@shared/types'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/Button'
@@ -41,43 +40,8 @@ function GameSwitch({ gameId }: { gameId: GameId }) {
 }
 
 function RoomContent({ roomCode }: { roomCode: string }) {
-  const [searchParams] = useSearchParams()
   const { state, send, connected, error } = usePartyRoom()
   const { profile } = useProfile()
-  const appliedInitialSettings = useRef(false)
-
-  useEffect(() => {
-    if (!state || appliedInitialSettings.current) return
-    const me = state.players.find((p) => p.id === profile.clientPlayerId)
-    if (!me?.isHost || state.phase !== 'lobby') return
-    const gameParam = searchParams.get('game')
-    const roundsParam = searchParams.get('rounds')
-    const timerParam = searchParams.get('timer')
-    const maxPlayersParam = searchParams.get('maxPlayers')
-    const eliminationParam = searchParams.get('elimination')
-    if (gameParam && isGameId(gameParam) && gameParam !== state.gameId) {
-      send({ type: 'hostChangeGame', gameId: gameParam })
-    }
-    const rounds = roundsParam ? Number(roundsParam) : null
-    if (rounds && !Number.isNaN(rounds) && rounds !== state.maxRounds) {
-      send({ type: 'hostSetRounds', maxRounds: rounds })
-    }
-    const roundTimeLimitMs = timerParam ? Number(timerParam) * 1000 : null
-    if (roundTimeLimitMs && !Number.isNaN(roundTimeLimitMs) && roundTimeLimitMs !== state.roundTimeLimitMs) {
-      send({ type: 'hostSetRoundTimer', roundTimeLimitMs })
-    }
-    const maxPlayers = maxPlayersParam ? Number(maxPlayersParam) : null
-    if (maxPlayers && !Number.isNaN(maxPlayers) && maxPlayers !== state.maxPlayers) {
-      send({ type: 'hostSetMaxPlayers', maxPlayers })
-    }
-    if (eliminationParam !== null) {
-      const eliminationMode = eliminationParam === 'true'
-      if (eliminationMode !== state.eliminationMode) {
-        send({ type: 'hostSetElimination', eliminationMode })
-      }
-    }
-    appliedInitialSettings.current = true
-  }, [state, profile.clientPlayerId, searchParams, send])
 
   if (error) {
     return (
