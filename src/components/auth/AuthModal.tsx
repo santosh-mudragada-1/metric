@@ -11,16 +11,24 @@ interface AuthModalProps {
   onClose: () => void
 }
 
+type Mode = 'signin' | 'signup'
 type Step = 'options' | 'sent'
+
+const TITLES: Record<Mode, string> = {
+  signin: 'Sign in',
+  signup: 'Create your account',
+}
 
 export function AuthModal({ open, onClose }: AuthModalProps) {
   const { configured, signInWithGoogle, sendMagicLink, signInWithPasskey } = useAuth()
+  const [mode, setMode] = useState<Mode>('signin')
   const [step, setStep] = useState<Step>('options')
   const [email, setEmail] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
   const reset = () => {
+    setMode('signin')
     setStep('options')
     setEmail('')
     setError(null)
@@ -32,11 +40,13 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
     onClose()
   }
 
+  /** Returns true on success. A cancelled passkey prompt resolves quietly — it isn't a real error. */
   const run = async (fn: () => Promise<AuthResult>): Promise<boolean> => {
     setBusy(true)
     setError(null)
     const result = await fn()
     setBusy(false)
+    if (result.cancelled) return false
     if (result.error) {
       setError(result.error)
       return false
@@ -53,8 +63,10 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
     if (await run(() => sendMagicLink(email.trim()))) setStep('sent')
   }
 
+  const title = step === 'sent' ? 'Check your email' : TITLES[mode]
+
   return (
-    <Modal open={open} onClose={close} title={step === 'sent' ? 'Check your email' : 'Sign in'}>
+    <Modal open={open} onClose={close} title={title}>
       {!configured && (
         <p className="mb-4 text-sm text-text-muted">
           Sign-in isn't configured yet — add Supabase credentials to enable this.
@@ -63,10 +75,18 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
 
       {step === 'options' && (
         <div className="flex flex-col gap-3">
-          <Button variant="ghost" size="lg" disabled={!configured || busy} onClick={handlePasskey} className="w-full gap-3">
-            <KeyIcon className="h-4.5 w-4.5" />
-            Sign in with a passkey
-          </Button>
+          {mode === 'signin' && (
+            <Button
+              variant="ghost"
+              size="lg"
+              disabled={!configured || busy}
+              onClick={handlePasskey}
+              className="w-full gap-3"
+            >
+              <KeyIcon className="h-4.5 w-4.5" />
+              Sign in with a passkey
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="lg"
@@ -103,8 +123,17 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
             onClick={handleSendLink}
             className="w-full"
           >
-            Email me a sign-in link
+            {mode === 'signin' ? 'Email me a sign-in link' : 'Create my account'}
           </Button>
+
+          <button
+            type="button"
+            onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}
+            className="mt-1 cursor-pointer text-center font-mono text-[0.6875rem] tracking-[0.14em] text-text-dim
+              uppercase hover:text-text-muted"
+          >
+            {mode === 'signin' ? "New here? Create an account" : 'Already have an account? Sign in'}
+          </button>
         </div>
       )}
 

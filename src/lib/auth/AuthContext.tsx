@@ -4,6 +4,8 @@ import { isSupabaseConfigured, supabase } from '@/lib/supabase'
 
 export interface AuthResult {
   error?: string
+  /** The browser's passkey prompt was dismissed or timed out — not a real failure, don't show it as an error. */
+  cancelled?: boolean
 }
 
 export interface AuthContextValue {
@@ -14,6 +16,7 @@ export interface AuthContextValue {
   sendMagicLink: (email: string) => Promise<AuthResult>
   signInWithPasskey: () => Promise<AuthResult>
   registerPasskey: () => Promise<AuthResult>
+  hasPasskey: () => Promise<boolean>
   signOut: () => Promise<void>
 }
 
@@ -22,6 +25,14 @@ export const AuthContext = createContext<AuthContextValue | null>(null)
 function errorMessage(error: unknown): string {
   if (error && typeof error === 'object' && 'message' in error) return String((error as { message: unknown }).message)
   return 'Something went wrong. Try again.'
+}
+
+/** WebAuthn throws NotAllowedError both when the user cancels and when the prompt times out. */
+function isPasskeyCancelled(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+  const name = 'name' in error ? String((error as { name: unknown }).name) : ''
+  const message = 'message' in error ? String((error as { message: unknown }).message) : ''
+  return name === 'NotAllowedError' || message.toLowerCase().includes('timed out or was not allowed')
 }
 
 const NOT_CONFIGURED: AuthResult = { error: "Sign-in isn't configured yet — add Supabase credentials to enable this." }
@@ -64,9 +75,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!supabase) return NOT_CONFIGURED
     try {
       const { error } = await supabase.auth.signInWithPasskey()
-      return error ? { error: errorMessage(error) } : {}
+      if (!error) return {}
+      return isPasskeyCancelled(error) ? { cancelled: true } : { error: errorMessage(error) }
     } catch (error) {
-      return { error: errorMessage(error) }
+      return isPasskeyCancelled(error) ? { cancelled: true } : { error: errorMessage(error) }
     }
   }
 
@@ -74,9 +86,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!supabase) return NOT_CONFIGURED
     try {
       const { error } = await supabase.auth.registerPasskey()
-      return error ? { error: errorMessage(error) } : {}
+      if (!error) return {}
+      return isPasskeyCancelled(error) ? { cancelled: true } : { error: errorMessage(error) }
     } catch (error) {
-      return { error: errorMessage(error) }
+      return isPasskeyCancelled(error) ? { cancelled: true } : { error: errorMessage(error) }
+    }
+  }
+
+  const hasPasskey = async (): Promise<boolean> => {
+    if (!supabase) return false
+    try {
+      const { data, error } = await supabase.auth.passkey.list()
+      if (error) return false
+      return (data?.length ?? 0) > 0
+    } catch {
+      return false
     }
   }
 
@@ -95,6 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         sendMagicLink,
         signInWithPasskey,
         registerPasskey,
+        hasPasskey,
         signOut,
       }}
     >

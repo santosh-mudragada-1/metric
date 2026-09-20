@@ -5,6 +5,7 @@ import { MoonIcon, SpeakerWaveIcon, SpeakerXMarkIcon, SunIcon } from '@heroicons
 import { IconButton } from '@/components/ui/IconButton'
 import { Button } from '@/components/ui/Button'
 import { AccountMenu } from '@/components/auth/AccountMenu'
+import { AddPasskeyPrompt } from '@/components/auth/AddPasskeyPrompt'
 import { AuthModal } from '@/components/auth/AuthModal'
 import { useAuth } from '@/hooks/useAuth'
 import { useSound } from '@/hooks/useSound'
@@ -85,6 +86,7 @@ export function AppShell() {
         <Outlet />
       </main>
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
+      <AddPasskeyPrompt />
     </div>
   )
 }

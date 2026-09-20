@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
-import { ArrowRightStartOnRectangleIcon, ChartBarIcon, KeyIcon } from '@heroicons/react/24/outline'
+import { ArrowRightStartOnRectangleIcon, ChartBarIcon } from '@heroicons/react/24/outline'
 import { useAuth } from '@/hooks/useAuth'
 import { playClick } from '@/lib/sound/sfx'
 import { withViewTransition } from '@/lib/viewTransition'
@@ -10,9 +10,8 @@ function initialsFromEmail(email: string): string {
 }
 
 export function AccountMenu() {
-  const { user, registerPasskey, signOut } = useAuth()
+  const { user, signOut } = useAuth()
   const [open, setOpen] = useState(false)
-  const [passkeyMessage, setPasskeyMessage] = useState<string | null>(null)
   const rootRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
 
@@ -28,12 +27,6 @@ export function AccountMenu() {
   if (!user) return null
 
   const email = user.email ?? 'Signed in'
-
-  const handleAddPasskey = async () => {
-    const result = await registerPasskey()
-    setPasskeyMessage(result.error ?? 'Passkey added.')
-    setTimeout(() => setPasskeyMessage(null), 2400)
-  }
 
   const goToStats = () => {
     setOpen(false)
@@ -72,17 +65,6 @@ export function AccountMenu() {
             <ChartBarIcon className="h-4 w-4" />
             Your stats
           </button>
-
-          <button
-            type="button"
-            onClick={handleAddPasskey}
-            className="flex w-full cursor-pointer items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm
-              text-text hover:bg-surface-hover"
-          >
-            <KeyIcon className="h-4 w-4" />
-            Add a passkey
-          </button>
-          {passkeyMessage && <p className="px-3 pb-1 text-xs text-text-dim">{passkeyMessage}</p>}
 
           <button
             type="button"
