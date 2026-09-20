@@ -14,7 +14,6 @@ export interface AuthContextValue {
   loading: boolean
   configured: boolean
   signInWithGoogle: () => Promise<AuthResult>
-  sendMagicLink: (email: string) => Promise<AuthResult>
   signInWithPasskey: () => Promise<AuthResult>
   registerPasskey: () => Promise<AuthResult>
   hasPasskey: () => Promise<boolean>
@@ -25,10 +24,6 @@ export const AuthContext = createContext<AuthContextValue | null>(null)
 
 /** Maps raw GoTrue error text to copy a player would actually understand. */
 const FRIENDLY_ERROR_PATTERNS: [RegExp, string][] = [
-  [/email rate limit exceeded/i, 'Too many attempts — wait a minute, then try again.'],
-  [/over_email_send_rate_limit/i, 'Too many attempts — wait a minute, then try again.'],
-  [/for security purposes.*after (\d+) seconds/i, "You've already requested a link — check your email, or wait a moment before requesting another."],
-  [/invalid.*email/i, "That doesn't look like a valid email address."],
   [/network|fetch failed|failed to fetch/i, "Couldn't reach the sign-in service — check your connection and try again."],
 ]
 
@@ -83,15 +78,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return error ? { error: errorMessage(error) } : {}
   }
 
-  const sendMagicLink = async (email: string): Promise<AuthResult> => {
-    if (!supabase) return NOT_CONFIGURED
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { shouldCreateUser: true, emailRedirectTo: window.location.origin },
-    })
-    return error ? { error: errorMessage(error) } : {}
-  }
-
   const signInWithPasskey = async (): Promise<AuthResult> => {
     if (!supabase) return NOT_CONFIGURED
     try {
@@ -137,7 +123,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         configured: isSupabaseConfigured,
         signInWithGoogle,
-        sendMagicLink,
         signInWithPasskey,
         registerPasskey,
         hasPasskey,

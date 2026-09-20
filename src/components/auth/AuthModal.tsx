@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { EnvelopeOpenIcon, KeyIcon } from '@heroicons/react/24/outline'
+import { useState } from 'react'
+import { KeyIcon } from '@heroicons/react/24/outline'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { useAuth } from '@/hooks/useAuth'
@@ -11,46 +11,14 @@ interface AuthModalProps {
   onClose: () => void
 }
 
-type Mode = 'signin' | 'signup'
-type Step = 'options' | 'sent'
-
-const TITLES: Record<Mode, string> = {
-  signin: 'Sign in',
-  signup: 'Create your account',
-}
-
-/** Matches Supabase's own per-address SMTP cooldown, so the UI never lets you race past it. */
-const EMAIL_COOLDOWN_SECONDS = 60
-
 export function AuthModal({ open, onClose }: AuthModalProps) {
-  const { configured, signInWithGoogle, sendMagicLink, signInWithPasskey } = useAuth()
-  const [mode, setMode] = useState<Mode>('signin')
-  const [step, setStep] = useState<Step>('options')
-  const [email, setEmail] = useState('')
+  const { configured, signInWithGoogle, signInWithPasskey } = useAuth()
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
-  const [cooldownUntil, setCooldownUntil] = useState<number | null>(null)
-  const [now, setNow] = useState(() => Date.now())
-
-  useEffect(() => {
-    if (!cooldownUntil) return
-    const id = setInterval(() => setNow(Date.now()), 1000)
-    return () => clearInterval(id)
-  }, [cooldownUntil])
-
-  const secondsLeft = cooldownUntil ? Math.max(0, Math.ceil((cooldownUntil - now) / 1000)) : 0
-  const onCooldown = secondsLeft > 0
-
-  const reset = () => {
-    setMode('signin')
-    setStep('options')
-    setEmail('')
-    setError(null)
-    setBusy(false)
-  }
 
   const close = () => {
-    reset()
+    setError(null)
+    setBusy(false)
     onClose()
   }
 
@@ -72,111 +40,30 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
     if (await run(signInWithPasskey)) close()
   }
 
-  const handleSendLink = async () => {
-    if (!email.trim() || onCooldown) return
-    const ok = await run(() => sendMagicLink(email.trim()))
-    setCooldownUntil(Date.now() + EMAIL_COOLDOWN_SECONDS * 1000)
-    if (ok) setStep('sent')
-  }
-
-  const title = step === 'sent' ? 'Check your email' : TITLES[mode]
-
   return (
-    <Modal open={open} onClose={close} title={title}>
+    <Modal open={open} onClose={close} title="Sign in">
       {!configured && (
         <p className="mb-4 text-sm text-text-muted">
           Sign-in isn't configured yet — add Supabase credentials to enable this.
         </p>
       )}
 
-      {step === 'options' && (
-        <div className="flex flex-col gap-3">
-          {mode === 'signin' && (
-            <Button
-              variant="ghost"
-              size="lg"
-              disabled={!configured || busy}
-              onClick={handlePasskey}
-              className="w-full gap-3"
-            >
-              <KeyIcon className="h-4.5 w-4.5" />
-              Sign in with a passkey
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="lg"
-            disabled={!configured || busy}
-            onClick={() => run(signInWithGoogle)}
-            className="w-full gap-3"
-          >
-            <GoogleIcon />
-            Continue with Google
-          </Button>
-
-          <div className="my-1 flex items-center gap-3">
-            <span className="h-px flex-1 bg-border" />
-            <span className="font-mono text-[0.6875rem] tracking-[0.14em] text-text-dim uppercase">or</span>
-            <span className="h-px flex-1 bg-border" />
-          </div>
-
-          <input
-            type="email"
-            inputMode="email"
-            autoComplete="email"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSendLink()}
-            disabled={!configured || busy || onCooldown}
-            className="h-13 w-full rounded-full border border-border-strong bg-surface-raised px-4 text-sm text-text
-              outline-none focus:border-invert/60 disabled:opacity-50"
-          />
-          <Button
-            variant="primary"
-            size="lg"
-            disabled={!configured || busy || onCooldown || !email.trim()}
-            onClick={handleSendLink}
-            className="w-full"
-          >
-            {onCooldown
-              ? `Try again in ${secondsLeft}s`
-              : mode === 'signin'
-                ? 'Email me a sign-in link'
-                : 'Create my account'}
-          </Button>
-
-          <button
-            type="button"
-            onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}
-            className="mt-1 cursor-pointer text-center font-mono text-[0.6875rem] tracking-[0.14em] text-text-dim
-              uppercase hover:text-text-muted"
-          >
-            {mode === 'signin' ? "New here? Create an account" : 'Already have an account? Sign in'}
-          </button>
-        </div>
-      )}
-
-      {step === 'sent' && (
-        <div className="flex flex-col items-center gap-4 py-4 text-center">
-          <EnvelopeOpenIcon className="h-8 w-8 text-text-dim" />
-          <p className="text-sm text-text-muted">
-            We sent a sign-in link to <span className="text-text">{email}</span>. Open it on this device to finish
-            signing in.
-          </p>
-          <button
-            type="button"
-            onClick={() => {
-              setStep('options')
-              setError(null)
-            }}
-            className="cursor-pointer font-mono text-[0.6875rem] tracking-[0.14em] text-text-dim uppercase
-              hover:text-text-muted"
-          >
-            Use a different method
-          </button>
-        </div>
-      )}
+      <div className="flex flex-col gap-3">
+        <Button variant="ghost" size="lg" disabled={!configured || busy} onClick={handlePasskey} className="w-full gap-3">
+          <KeyIcon className="h-4.5 w-4.5" />
+          Sign in with a passkey
+        </Button>
+        <Button
+          variant="primary"
+          size="lg"
+          disabled={!configured || busy}
+          onClick={() => run(signInWithGoogle)}
+          className="w-full gap-3"
+        >
+          <GoogleIcon />
+          Continue with Google
+        </Button>
+      </div>
 
       {error && <p className="mt-3 text-sm text-danger">{error}</p>}
     </Modal>
