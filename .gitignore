@@ -12,8 +12,8 @@ dist
 dist-ssr
 *.local
 
-# PartyKit local dev state
-.partykit
+# Wrangler local dev state
+.wrangler
 
 # Editor directories and files
 .vscode/*

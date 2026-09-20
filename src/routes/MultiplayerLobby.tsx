@@ -94,8 +94,6 @@ export default function MultiplayerLobby() {
   const nameInputRef = useRef<HTMLInputElement>(null)
   const { scope: nameFieldScope, run: runNameFieldAnim } = useAnimation<HTMLDivElement>()
 
-  // Already set (from a prior party visit, or right after sign-up) — no need to ask again.
-  const hasSavedName = profile.name.trim().length > 0
   const canProceed = name.trim().length > 0
 
   const commitName = () => {
@@ -155,23 +153,21 @@ export default function MultiplayerLobby() {
 
       {mode === 'choose' && (
         <>
-          {!hasSavedName && (
-            <div ref={nameFieldScope} className="mb-10 max-w-xs">
-              <label className="mb-2 block font-mono text-[0.6875rem] tracking-[0.14em] text-text-dim uppercase">
-                Your name
-              </label>
-              <input
-                ref={nameInputRef}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                onBlur={commitName}
-                maxLength={16}
-                placeholder="Enter a display name"
-                className="w-full rounded-full border border-border-strong bg-surface-raised px-4 py-3
-                  text-text outline-none focus:border-invert/60"
-              />
-            </div>
-          )}
+          <div ref={nameFieldScope} className="mb-10 max-w-xs">
+            <label className="mb-2 block font-mono text-[0.6875rem] tracking-[0.14em] text-text-dim uppercase">
+              Your name
+            </label>
+            <input
+              ref={nameInputRef}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onBlur={commitName}
+              maxLength={16}
+              placeholder="Enter a display name"
+              className="w-full rounded-full border border-border-strong bg-surface-raised px-4 py-3
+                text-text outline-none focus:border-invert/60"
+            />
+          </div>
 
           <div className="grid max-w-3xl grid-cols-1 gap-5 sm:grid-cols-2">
             <OptionCard

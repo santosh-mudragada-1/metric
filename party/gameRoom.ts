@@ -1,17 +1,16 @@
-import type * as Party from 'partykit/server'
-import type { ClientMessage, ServerMessage } from '../../shared/protocol'
-import type { GameId, GameResult, Player, RoomState } from '../../shared/types'
-import { isGameAllowedForPlayers, scoreOf } from '../../shared/gameConfig'
-import { generateRoundContent as reactionTimeContent } from '../games/reactionTime'
-import { generateRoundContent as aimTrainerContent } from '../games/aimTrainer'
-import { generateRoundContent as sequenceMemoryContent } from '../games/sequenceMemory'
-import { generateRoundContent as numberMemoryContent } from '../games/numberMemory'
-import { generateRoundContent as chimpTestContent } from '../games/chimpTest'
-import { generateRoundContent as visualMemoryContent } from '../games/visualMemory'
-import { generateRoundContent as verbalMemoryContent } from '../games/verbalMemory'
-import { generateRoundContent as typingContent } from '../games/typing'
+import type { ClientMessage, ServerMessage } from '../shared/protocol'
+import type { GameId, GameResult, Player, RoomState } from '../shared/types'
+import { isGameAllowedForPlayers, scoreOf } from '../shared/gameConfig'
+import { generateRoundContent as reactionTimeContent } from './games/reactionTime'
+import { generateRoundContent as aimTrainerContent } from './games/aimTrainer'
+import { generateRoundContent as sequenceMemoryContent } from './games/sequenceMemory'
+import { generateRoundContent as numberMemoryContent } from './games/numberMemory'
+import { generateRoundContent as chimpTestContent } from './games/chimpTest'
+import { generateRoundContent as visualMemoryContent } from './games/visualMemory'
+import { generateRoundContent as verbalMemoryContent } from './games/verbalMemory'
+import { generateRoundContent as typingContent } from './games/typing'
 
-interface ConnState {
+interface ConnAttachment {
   clientPlayerId: string
 }
 
@@ -22,6 +21,7 @@ const MAX_ROUND_TIME_LIMIT_MS = 180_000
 const DEFAULT_MAX_PLAYERS = 8
 const MIN_MAX_PLAYERS = 2
 const MAX_MAX_PLAYERS = 12
+const STATE_STORAGE_KEY = 'roomState'
 
 function generateRoundContent(gameId: GameId): unknown {
   switch (gameId) {
@@ -44,69 +44,89 @@ function generateRoundContent(gameId: GameId): unknown {
   }
 }
 
-export default class GameRoom implements Party.Server {
-  state: RoomState
-  private roundTimer: ReturnType<typeof setTimeout> | null = null
+function initialState(code: string): RoomState {
+  return {
+    code,
+    gameId: 'reaction-time',
+    phase: 'lobby',
+    players: [],
+    round: 0,
+    maxRounds: 5,
+    maxPlayers: DEFAULT_MAX_PLAYERS,
+    roundTimeLimitMs: DEFAULT_ROUND_TIME_LIMIT_MS,
+    eliminationMode: false,
+    roundResults: {},
+    leaderboard: [],
+  }
+}
 
-  constructor(readonly room: Party.Room) {
-    this.state = {
-      code: room.id,
-      gameId: 'reaction-time',
-      phase: 'lobby',
-      players: [],
-      round: 0,
-      maxRounds: 5,
-      maxPlayers: DEFAULT_MAX_PLAYERS,
-      roundTimeLimitMs: DEFAULT_ROUND_TIME_LIMIT_MS,
-      eliminationMode: false,
-      roundResults: {},
-      leaderboard: [],
-    }
+/**
+ * One party room, one Durable Object instance (keyed by room code — see `worker.ts`).
+ *
+ * Cloudflare hibernates idle Durable Objects to save resources, which evicts everything on the
+ * class instance except attached WebSockets. Two things that PartyKit's hosted runtime handled
+ * for free now have to be explicit:
+ *  - `this.state` is persisted to `ctx.storage` after every mutation and reloaded in the
+ *    constructor, instead of just living in memory.
+ *  - Countdown/round timing uses the Alarms API (`ctx.storage.setAlarm`) instead of
+ *    `setTimeout`, since a plain timer is dropped the moment the object hibernates.
+ */
+export class GameRoom implements DurableObject {
+  private state: RoomState
+  private ready: Promise<void>
+
+  constructor(
+    private readonly ctx: DurableObjectState,
+    _env: unknown,
+  ) {
+    this.state = initialState(ctx.id.name ?? ctx.id.toString())
+    this.ready = ctx.blockConcurrencyWhile(async () => {
+      const stored = await ctx.storage.get<RoomState>(STATE_STORAGE_KEY)
+      if (stored) this.state = stored
+    })
   }
 
-  private send(connection: Party.Connection, message: ServerMessage) {
-    connection.send(JSON.stringify(message))
+  private async persist(): Promise<void> {
+    await this.ctx.storage.put(STATE_STORAGE_KEY, this.state)
   }
 
-  private broadcast() {
-    this.room.broadcast(JSON.stringify({ type: 'state', state: this.state } satisfies ServerMessage))
+  private send(ws: WebSocket, message: ServerMessage): void {
+    ws.send(JSON.stringify(message))
+  }
+
+  private broadcast(): void {
+    const payload = JSON.stringify({ type: 'state', state: this.state } satisfies ServerMessage)
+    for (const ws of this.ctx.getWebSockets()) ws.send(payload)
+  }
+
+  private attachmentOf(ws: WebSocket): ConnAttachment | null {
+    return (ws.deserializeAttachment() as ConnAttachment | null) ?? null
   }
 
   private getPlayer(clientPlayerId: string): Player | undefined {
     return this.state.players.find((p) => p.id === clientPlayerId)
   }
 
-  private ensureHost() {
+  private ensureHost(): void {
     const hasConnectedHost = this.state.players.some((p) => p.isHost && p.connected)
     if (hasConnectedHost) return
     const nextHost = this.state.players.find((p) => p.connected)
     this.state.players = this.state.players.map((p) => ({ ...p, isHost: p.id === nextHost?.id }))
   }
 
-  private clearRoundTimer() {
-    if (this.roundTimer) clearTimeout(this.roundTimer)
-    this.roundTimer = null
-  }
-
-  private startCountdown() {
+  private async startCountdown(): Promise<void> {
     this.state.roundContent = generateRoundContent(this.state.gameId)
     this.state.roundResults = {}
     this.state.round += 1
     this.state.phase = 'countdown'
     this.state.countdownEndsAt = Date.now() + COUNTDOWN_MS
+    await this.persist()
     this.broadcast()
-
-    this.clearRoundTimer()
-    this.roundTimer = setTimeout(() => {
-      this.state.phase = 'playing'
-      this.broadcast()
-      this.clearRoundTimer()
-      this.roundTimer = setTimeout(() => this.finishRound(), this.state.roundTimeLimitMs)
-    }, COUNTDOWN_MS)
+    await this.ctx.storage.setAlarm(Date.now() + COUNTDOWN_MS)
   }
 
   /** Lowest scorer(s) of the round are cut. Stops short of eliminating everyone still active. */
-  private applyElimination() {
+  private applyElimination(): void {
     const active = this.state.players.filter((p) => !p.eliminated)
     if (active.length <= 1) return
     const scored = active.map((p) => ({
@@ -121,28 +141,53 @@ export default class GameRoom implements Party.Server {
     this.state.players = this.state.players.map((p) => (cut.has(p.id) ? { ...p, eliminated: true } : p))
   }
 
-  private finishRound() {
-    this.clearRoundTimer()
+  private async finishRound(): Promise<void> {
     if (this.state.phase !== 'playing') return
     if (this.state.eliminationMode) this.applyElimination()
     const activeCount = this.state.players.filter((p) => !p.eliminated).length
     const eliminationEnded = this.state.eliminationMode && activeCount <= 1
     this.state.phase = eliminationEnded || this.state.round >= this.state.maxRounds ? 'finished' : 'roundResult'
+    await this.persist()
     this.broadcast()
   }
 
-  private maybeFinishRoundEarly() {
+  private async maybeFinishRoundEarly(): Promise<void> {
     const connectedCount = this.state.players.filter((p) => p.connected && !p.eliminated).length
     if (connectedCount > 0 && Object.keys(this.state.roundResults).length >= connectedCount) {
-      this.finishRound()
+      await this.ctx.storage.deleteAlarm()
+      await this.finishRound()
     }
   }
 
-  onConnect(connection: Party.Connection<ConnState>) {
-    this.send(connection, { type: 'state', state: this.state })
+  /** Fires when a scheduled countdown or round-timer elapses — see `startCountdown`/`onMessage`. */
+  async alarm(): Promise<void> {
+    await this.ready
+    if (this.state.phase === 'countdown') {
+      this.state.phase = 'playing'
+      await this.persist()
+      this.broadcast()
+      await this.ctx.storage.setAlarm(Date.now() + this.state.roundTimeLimitMs)
+      return
+    }
+    if (this.state.phase === 'playing') {
+      await this.finishRound()
+    }
   }
 
-  onMessage(raw: string | ArrayBuffer | ArrayBufferView, sender: Party.Connection<ConnState>) {
+  async fetch(request: Request): Promise<Response> {
+    await this.ready
+    if (request.headers.get('Upgrade') !== 'websocket') {
+      return new Response('Expected a WebSocket upgrade request', { status: 426 })
+    }
+    const pair = new WebSocketPair()
+    const [client, server] = Object.values(pair)
+    this.ctx.acceptWebSocket(server)
+    this.send(server, { type: 'state', state: this.state })
+    return new Response(null, { status: 101, webSocket: client })
+  }
+
+  async webSocketMessage(ws: WebSocket, raw: string | ArrayBuffer): Promise<void> {
+    await this.ready
     if (typeof raw !== 'string') return
     let message: ClientMessage
     try {
@@ -153,7 +198,7 @@ export default class GameRoom implements Party.Server {
 
     switch (message.type) {
       case 'join': {
-        sender.setState({ clientPlayerId: message.clientPlayerId })
+        ws.serializeAttachment({ clientPlayerId: message.clientPlayerId } satisfies ConnAttachment)
         const existing = this.getPlayer(message.clientPlayerId)
         if (existing) {
           existing.connected = true
@@ -161,7 +206,7 @@ export default class GameRoom implements Party.Server {
           existing.device = message.device
         } else {
           if (this.state.players.length >= this.state.maxPlayers) {
-            this.send(sender, { type: 'error', message: 'This room is full.' })
+            this.send(ws, { type: 'error', message: 'This room is full.' })
             return
           }
           const isFirst = this.state.players.length === 0
@@ -176,78 +221,85 @@ export default class GameRoom implements Party.Server {
           })
         }
         this.ensureHost()
+        await this.persist()
         this.broadcast()
         break
       }
 
       case 'setReady': {
-        const clientPlayerId = sender.state?.clientPlayerId
+        const clientPlayerId = this.attachmentOf(ws)?.clientPlayerId
         const player = clientPlayerId ? this.getPlayer(clientPlayerId) : undefined
         if (!player) return
         player.ready = message.ready
+        await this.persist()
         this.broadcast()
         break
       }
 
       case 'hostChangeGame': {
-        const player = sender.state && this.getPlayer(sender.state.clientPlayerId)
+        const player = this.playerFor(ws)
         if (!player?.isHost || !['lobby', 'finished'].includes(this.state.phase)) return
         if (!isGameAllowedForPlayers(message.gameId, this.state.players)) {
-          this.send(sender, {
+          this.send(ws, {
             type: 'error',
             message: 'That game is disabled — players joined from different device types.',
           })
           return
         }
         this.state.gameId = message.gameId
+        await this.persist()
         this.broadcast()
         break
       }
 
       case 'hostSetRounds': {
-        const player = sender.state && this.getPlayer(sender.state.clientPlayerId)
+        const player = this.playerFor(ws)
         if (!player?.isHost || !['lobby', 'finished'].includes(this.state.phase)) return
         this.state.maxRounds = Math.max(1, Math.min(10, message.maxRounds))
+        await this.persist()
         this.broadcast()
         break
       }
 
       case 'hostSetMaxPlayers': {
-        const player = sender.state && this.getPlayer(sender.state.clientPlayerId)
+        const player = this.playerFor(ws)
         if (!player?.isHost || !['lobby', 'finished'].includes(this.state.phase)) return
         this.state.maxPlayers = Math.max(MIN_MAX_PLAYERS, Math.min(MAX_MAX_PLAYERS, message.maxPlayers))
+        await this.persist()
         this.broadcast()
         break
       }
 
       case 'hostSetRoundTimer': {
-        const player = sender.state && this.getPlayer(sender.state.clientPlayerId)
+        const player = this.playerFor(ws)
         if (!player?.isHost || !['lobby', 'finished'].includes(this.state.phase)) return
         this.state.roundTimeLimitMs = Math.max(
           MIN_ROUND_TIME_LIMIT_MS,
           Math.min(MAX_ROUND_TIME_LIMIT_MS, message.roundTimeLimitMs),
         )
+        await this.persist()
         this.broadcast()
         break
       }
 
       case 'hostSetElimination': {
-        const player = sender.state && this.getPlayer(sender.state.clientPlayerId)
+        const player = this.playerFor(ws)
         if (!player?.isHost || !['lobby', 'finished'].includes(this.state.phase)) return
         this.state.eliminationMode = message.eliminationMode
+        await this.persist()
         this.broadcast()
         break
       }
 
       case 'hostStartRound': {
-        const player = sender.state && this.getPlayer(sender.state.clientPlayerId)
+        const player = this.playerFor(ws)
         if (!player?.isHost) return
         if (!['lobby', 'roundResult', 'finished'].includes(this.state.phase)) return
         if (
           (this.state.phase === 'lobby' || this.state.phase === 'finished') &&
           !isGameAllowedForPlayers(this.state.gameId, this.state.players)
         ) {
-          this.send(sender, {
+          this.send(ws, {
             type: 'error',
             message: 'That game is disabled — players joined from different device types. Pick another game.',
           })
@@ -258,24 +310,30 @@ export default class GameRoom implements Party.Server {
           this.state.leaderboard = []
           this.state.players = this.state.players.map((p) => ({ ...p, eliminated: false }))
         }
-        this.startCountdown()
+        await this.startCountdown()
         break
       }
 
       case 'submitResult': {
-        const clientPlayerId = sender.state?.clientPlayerId
+        const clientPlayerId = this.attachmentOf(ws)?.clientPlayerId
         const player = clientPlayerId ? this.getPlayer(clientPlayerId) : undefined
         if (!player || player.eliminated || this.state.phase !== 'playing') return
         this.state.roundResults[player.id] = message.result
         this.applyLeaderboard(player.id, message.result)
+        await this.persist()
         this.broadcast()
-        this.maybeFinishRoundEarly()
+        await this.maybeFinishRoundEarly()
         break
       }
     }
   }
 
-  private applyLeaderboard(playerId: string, result: GameResult) {
+  private playerFor(ws: WebSocket): Player | undefined {
+    const clientPlayerId = this.attachmentOf(ws)?.clientPlayerId
+    return clientPlayerId ? this.getPlayer(clientPlayerId) : undefined
+  }
+
+  private applyLeaderboard(playerId: string, result: GameResult): void {
     const player = this.getPlayer(playerId)
     if (!player) return
     const points = scoreOf(result)
@@ -290,13 +348,19 @@ export default class GameRoom implements Party.Server {
     this.state.leaderboard.sort((a, b) => b.totalScore - a.totalScore)
   }
 
-  onClose(connection: Party.Connection<ConnState>) {
-    const clientPlayerId = connection.state?.clientPlayerId
+  async webSocketClose(ws: WebSocket): Promise<void> {
+    await this.ready
+    const clientPlayerId = this.attachmentOf(ws)?.clientPlayerId
     const player = clientPlayerId ? this.getPlayer(clientPlayerId) : undefined
     if (!player) return
     player.connected = false
     this.ensureHost()
+    await this.persist()
     this.broadcast()
-    this.maybeFinishRoundEarly()
+    await this.maybeFinishRoundEarly()
+  }
+
+  async webSocketError(ws: WebSocket): Promise<void> {
+    await this.webSocketClose(ws)
   }
 }

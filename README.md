@@ -4,10 +4,16 @@ This template provides a minimal setup to get React working in Vite with HMR and
 
 ## Multiplayer (party rooms)
 
-Party rooms run on [PartyKit](https://partykit.io) (`party/rooms/gameRoom.ts`). Locally:
+Party rooms run on a Cloudflare Worker + Durable Object (`party/worker.ts`, `party/gameRoom.ts`),
+self-hosted directly on Cloudflare rather than through PartyKit's shared hosting — PartyKit's
+`partykit.dev` domain hit its platform-wide custom-domain limit, which made `partykit deploy`
+fail outright. The client (`partysocket`) doesn't care which one is behind the URL; it just
+expects `wss://<host>/parties/<party>/<room>`, which the Worker's router matches.
+
+Locally:
 
 ```
-npm run dev:all   # runs vite (5173) and `partykit dev` (1999) together
+npm run dev:all   # runs vite (5173) and `wrangler dev` (1999) together
 ```
 
 The client connects to `VITE_PARTYKIT_HOST`, falling back to the page's own hostname on port
@@ -17,10 +23,19 @@ not `http://localhost:5173`) and a phone on the same Wi-Fi joining that same URL
 reach `192.168.1.23:1999` instead of hanging on "connecting to room" (which is what happens if
 the phone tries to resolve `localhost:1999` against itself).
 
-For production, deploy the party server (`npx partykit deploy`) and set `VITE_PARTYKIT_HOST` to
-the deployed host (e.g. `metric.yourname.partykit.dev`) in `.env.local` and in Vercel's
-environment variables — otherwise deployed clients will try to reach `localhost:1999` and never
-connect.
+For production:
+
+1. `npx wrangler login` (once — needs a browser).
+2. `npm run deploy:party` (or `npx wrangler deploy`) — deploys to your own Cloudflare account and
+   prints the Worker's `*.workers.dev` URL.
+3. Set `VITE_PARTYKIT_HOST` to that host (no `https://`, e.g. `metric-party.yourname.workers.dev`)
+   in `.env.local` and in Vercel's environment variables, then redeploy the frontend — otherwise
+   deployed clients will try to reach `localhost:1999` and never connect.
+
+Unlike PartyKit's managed runtime, a raw Durable Object hibernates when idle and drops anything
+that was only in memory. `GameRoom` persists `RoomState` to `ctx.storage` after every change and
+reloads it in the constructor, and uses the Alarms API instead of `setTimeout` for countdown/round
+timing, so state and timers both survive hibernation.
 
 ## Setting up sign-in (Google, email OTP, passkeys)
 
