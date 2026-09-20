@@ -23,9 +23,24 @@ export interface AuthContextValue {
 
 export const AuthContext = createContext<AuthContextValue | null>(null)
 
+/** Maps raw GoTrue error text to copy a player would actually understand. */
+const FRIENDLY_ERROR_PATTERNS: [RegExp, string][] = [
+  [/email rate limit exceeded/i, 'Too many attempts — wait a minute, then try again.'],
+  [/over_email_send_rate_limit/i, 'Too many attempts — wait a minute, then try again.'],
+  [/for security purposes.*after (\d+) seconds/i, "You've already requested a link — check your email, or wait a moment before requesting another."],
+  [/invalid.*email/i, "That doesn't look like a valid email address."],
+  [/network|fetch failed|failed to fetch/i, "Couldn't reach the sign-in service — check your connection and try again."],
+]
+
 function errorMessage(error: unknown): string {
-  if (error && typeof error === 'object' && 'message' in error) return String((error as { message: unknown }).message)
-  return 'Something went wrong. Try again.'
+  const raw =
+    error && typeof error === 'object' && 'message' in error
+      ? String((error as { message: unknown }).message)
+      : ''
+  for (const [pattern, friendly] of FRIENDLY_ERROR_PATTERNS) {
+    if (pattern.test(raw)) return friendly
+  }
+  return raw || 'Something went wrong. Try again.'
 }
 
 /** WebAuthn throws NotAllowedError both when the user cancels and when the prompt times out. */
