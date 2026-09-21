@@ -3,20 +3,24 @@ import { getMuted } from '@/lib/storage'
 class AudioEngine {
   private context: AudioContext | null = null
   private master: GainNode | null = null
+  private scratchBuffer: AudioBuffer | null = null
   private created = false
   private mutedState = false
 
   constructor() {
     this.mutedState = typeof window !== 'undefined' ? getMuted() : false
     if (typeof window !== 'undefined') {
-      // Some browsers (notably iOS Safari) only honor `resume()` when it's called
-      // synchronously inside a real user gesture — a resume requested later from a
-      // timer/animation-frame callback is silently ignored if the context fell back
-      // to 'suspended'. So this can't just run once on the first tap: it re-attempts
-      // the resume on every gesture for the life of the page, which is what actually
-      // keeps sounds triggered from timers/animations (not direct taps) audible.
+      // Browsers gate audio on a real sound having been *started* synchronously
+      // inside a user gesture's own call stack — calling resume(), or starting a
+      // node inside a resume().then() callback, happens on a later microtask and
+      // doesn't count. That's why timer/animation-triggered sfx (countdown ticks,
+      // sequence flashes) stayed silent while direct-tap sfx worked: the old code
+      // only ever played its priming buffer *after* resume() resolved. Every
+      // gesture below now starts a real (silent) buffer synchronously, first,
+      // before anything async — matching how Howler.js et al. unlock audio.
       document.addEventListener('pointerdown', this.unlock, { passive: true })
       document.addEventListener('keydown', this.unlock)
+      document.addEventListener('touchend', this.unlock, { passive: true })
     }
   }
 
@@ -30,18 +34,18 @@ class AudioEngine {
       master.connect(context.destination)
       this.context = context
       this.master = master
+      this.scratchBuffer = context.createBuffer(1, 1, context.sampleRate)
     }
 
     const context = this.context
-    if (context && context.state === 'suspended') {
-      void context.resume().then(() => {
-        if (context.state !== 'running') return
-        const primer = context.createBufferSource()
-        primer.buffer = context.createBuffer(1, 1, context.sampleRate)
-        primer.connect(context.destination)
-        primer.start()
-      })
-    }
+    if (!context || !this.scratchBuffer) return
+
+    const primer = context.createBufferSource()
+    primer.buffer = this.scratchBuffer
+    primer.connect(context.destination)
+    primer.start(0)
+
+    if (context.state === 'suspended') void context.resume()
   }
 
   get ctx(): AudioContext | null {

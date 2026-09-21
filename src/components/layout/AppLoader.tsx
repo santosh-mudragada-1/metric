@@ -6,9 +6,9 @@ interface AppLoaderProps {
   onDone: () => void
 }
 
-// An eight-step grey ramp (dark to light) — matches the app's ink/chalk-only
+// An eight-step grey ramp, kept dark throughout — matches the app's ink/chalk-only
 // system chrome instead of borrowing the colorful per-game accent palette.
-const ACCENTS = ['#141414', '#363636', '#575757', '#787878', '#999999', '#bababa', '#dbdbdb', '#f2f2f2']
+const ACCENTS = ['#0d0d0d', '#1a1a1a', '#262626', '#333333', '#404040', '#4d4d4d', '#595959', '#666666']
 
 export function AppLoader({ onDone }: AppLoaderProps) {
   const rootRef = useRef<HTMLDivElement>(null)
