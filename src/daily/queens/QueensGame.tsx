@@ -1,6 +1,6 @@
 import { generateQueens, isQueensSolved, type QueensCell } from '@/daily/queens/generateQueens'
 import { useDailyPuzzle } from '@/daily/shared/useDailyPuzzle'
-import { DailyComplete } from '@/daily/shared/DailyComplete'
+import { DailyGameCard } from '@/daily/shared/DailyGameCard'
 import { playClick } from '@/lib/sound/sfx'
 
 interface QueensState {
@@ -28,7 +28,6 @@ export function QueensGame() {
   const grid = state.grid
 
   const toggle = (idx: number) => {
-    if (completedToday) return
     playClick()
     const next = grid.slice()
     next[idx] = nextCell(next[idx])
@@ -37,38 +36,34 @@ export function QueensGame() {
   }
 
   return (
-    <div className="flex flex-col items-center gap-6">
-      {completedToday ? (
-        <DailyComplete gameId="queens" progress={progress} />
-      ) : (
-        <>
-          <div
-            className="grid gap-[2px] select-none"
-            style={{ gridTemplateColumns: `repeat(${size}, minmax(0, 1fr))`, width: 'min(92vw, 28rem)' }}
-          >
-            {grid.map((value, idx) => {
-              const color = palette[regionOf[idx]]
-              return (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => toggle(idx)}
-                  className="relative flex aspect-square cursor-pointer items-center justify-center transition-transform duration-100 active:scale-95"
-                  style={{ backgroundColor: `${color}4d`, boxShadow: `inset 0 0 0 1px ${color}99` }}
-                >
-                  {value === 1 && <span className="h-1.5 w-1.5 rounded-full bg-text-muted" />}
-                  {value === 2 && <Crown color={color} />}
-                </button>
-              )
-            })}
-          </div>
-
-          <p className="text-center text-sm text-text-muted">
-            Tap once to mark, twice for a crown. One crown per row, column, and color — none touching, even
-            diagonally.
-          </p>
-        </>
-      )}
-    </div>
+    <DailyGameCard
+      gameId="queens"
+      completedToday={completedToday}
+      progress={progress}
+      hasProgress={grid.some((v) => v !== 0)}
+    >
+      <div className="flex flex-col items-center gap-6">
+        <div
+          className="grid gap-[2px] select-none"
+          style={{ gridTemplateColumns: `repeat(${size}, minmax(0, 1fr))`, width: 'min(92vw, 28rem)' }}
+        >
+          {grid.map((value, idx) => {
+            const color = palette[regionOf[idx]]
+            return (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => toggle(idx)}
+                className="relative flex aspect-square cursor-pointer items-center justify-center transition-transform duration-100 active:scale-95"
+                style={{ backgroundColor: `${color}4d`, boxShadow: `inset 0 0 0 1px ${color}99` }}
+              >
+                {value === 1 && <span className="h-1.5 w-1.5 rounded-full bg-text-muted" />}
+                {value === 2 && <Crown color={color} />}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+    </DailyGameCard>
   )
 }

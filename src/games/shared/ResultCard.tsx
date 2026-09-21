@@ -168,14 +168,12 @@ export function ResultCard({
             </button>
           )}
 
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="lg"
             disabled={shareState === 'copied'}
             onClick={shareResult}
-            className="flex h-13 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full border
-              border-border-strong bg-surface-raised px-4 font-display text-[0.8125rem] font-medium text-text
-              transition-colors hover:border-text-muted hover:bg-surface-hover disabled:cursor-default
-              disabled:opacity-70"
+            className="flex-1 px-4"
           >
             {shareState === 'copied' ? (
               <>
@@ -188,7 +186,7 @@ export function ResultCard({
                 <span className="truncate">Share result &amp; invite a friend</span>
               </>
             )}
-          </button>
+          </Button>
         </div>
 
         <button

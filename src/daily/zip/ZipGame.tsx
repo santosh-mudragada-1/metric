@@ -1,7 +1,7 @@
 import { useRef, type CSSProperties } from 'react'
 import { generateZip } from '@/daily/zip/generateZip'
 import { useDailyPuzzle } from '@/daily/shared/useDailyPuzzle'
-import { DailyComplete } from '@/daily/shared/DailyComplete'
+import { DailyGameCard } from '@/daily/shared/DailyGameCard'
 import { Button } from '@/components/ui/Button'
 import { playClick } from '@/lib/sound/sfx'
 
@@ -42,7 +42,6 @@ export function ZipGame() {
   const nextRequired = path.filter((idx) => checkpoints[idx] !== 0).length + 1
 
   const extendTo = (idx: number) => {
-    if (completedToday) return
     const existingIndex = path.indexOf(idx)
     if (existingIndex !== -1) {
       setState((prev) => ({ path: prev.path.slice(0, existingIndex + 1) }))
@@ -68,73 +67,60 @@ export function ZipGame() {
   }
 
   return (
-    <div className="flex flex-col items-center gap-6">
-      {completedToday ? (
-        <DailyComplete gameId="zip" progress={progress} />
-      ) : (
-        <>
-          <div
-            className="grid touch-none gap-1 select-none"
-            style={{ gridTemplateColumns: `repeat(${size}, minmax(0, 1fr))`, width: 'min(92vw, 26rem)' }}
-            onPointerDown={() => (drawing.current = true)}
-            onPointerUp={() => (drawing.current = false)}
-            onPointerLeave={() => (drawing.current = false)}
-          >
-            {Array.from({ length: total }, (_, idx) => {
-              const posInPath = path.indexOf(idx)
-              const inPath = posInPath !== -1
-              const prevIdx = posInPath > 0 ? path[posInPath - 1] : null
-              const nextIdx = posInPath !== -1 && posInPath < path.length - 1 ? path[posInPath + 1] : null
-              const number = checkpoints[idx]
+    <DailyGameCard gameId="zip" completedToday={completedToday} progress={progress} hasProgress={path.length > 0}>
+      <div className="flex flex-col items-center gap-6">
+        <div
+          className="grid touch-none gap-1 select-none"
+          style={{ gridTemplateColumns: `repeat(${size}, minmax(0, 1fr))`, width: 'min(92vw, 26rem)' }}
+          onPointerDown={() => (drawing.current = true)}
+          onPointerUp={() => (drawing.current = false)}
+          onPointerLeave={() => (drawing.current = false)}
+        >
+          {Array.from({ length: total }, (_, idx) => {
+            const posInPath = path.indexOf(idx)
+            const inPath = posInPath !== -1
+            const prevIdx = posInPath > 0 ? path[posInPath - 1] : null
+            const nextIdx = posInPath !== -1 && posInPath < path.length - 1 ? path[posInPath + 1] : null
+            const number = checkpoints[idx]
 
-              return (
-                <div
-                  key={idx}
-                  onPointerDown={() => extendTo(idx)}
-                  onPointerEnter={() => drawing.current && extendTo(idx)}
-                  className={`relative aspect-square rounded-md border transition-colors duration-100 ${
-                    inPath ? 'border-accent-zip/60 bg-accent-zip-dim' : 'border-border bg-surface'
-                  }`}
-                >
-                  {inPath && prevIdx !== null && (
-                    <div
-                      className="absolute rounded-sm bg-accent-zip/70"
-                      style={STUB_STYLE[dirTo(size, idx, prevIdx)]}
-                    />
-                  )}
-                  {inPath && nextIdx !== null && (
-                    <div
-                      className="absolute rounded-sm bg-accent-zip/70"
-                      style={STUB_STYLE[dirTo(size, idx, nextIdx)]}
-                    />
-                  )}
-                  {number !== 0 && (
+            return (
+              <div
+                key={idx}
+                onPointerDown={() => extendTo(idx)}
+                onPointerEnter={() => drawing.current && extendTo(idx)}
+                className={`relative aspect-square rounded-md border transition-colors duration-100 ${
+                  inPath ? 'border-accent-zip/60 bg-accent-zip-dim' : 'border-border bg-surface'
+                }`}
+              >
+                {inPath && prevIdx !== null && (
+                  <div className="absolute rounded-sm bg-accent-zip/70" style={STUB_STYLE[dirTo(size, idx, prevIdx)]} />
+                )}
+                {inPath && nextIdx !== null && (
+                  <div className="absolute rounded-sm bg-accent-zip/70" style={STUB_STYLE[dirTo(size, idx, nextIdx)]} />
+                )}
+                {number !== 0 && (
+                  <span
+                    className={`relative z-10 flex h-full w-full items-center justify-center font-display text-lg
+                      font-semibold ${inPath ? 'text-on-invert' : 'text-text'}`}
+                  >
                     <span
-                      className={`relative z-10 flex h-full w-full items-center justify-center font-display text-lg
-                        font-semibold ${inPath ? 'text-on-invert' : 'text-text'}`}
+                      className={`flex h-[62%] w-[62%] items-center justify-center rounded-full ${
+                        inPath ? 'bg-accent-zip text-on-invert' : 'border border-border-strong text-text'
+                      }`}
                     >
-                      <span
-                        className={`flex h-[62%] w-[62%] items-center justify-center rounded-full ${
-                          inPath ? 'bg-accent-zip text-on-invert' : 'border border-border-strong text-text'
-                        }`}
-                      >
-                        {number}
-                      </span>
+                      {number}
                     </span>
-                  )}
-                </div>
-              )
-            })}
-          </div>
+                  </span>
+                )}
+              </div>
+            )
+          })}
+        </div>
 
-          <p className="text-center text-sm text-text-muted">
-            Drag from 1 through every number, filling every square, without lifting your finger.
-          </p>
-          <Button variant="ghost" onClick={reset}>
-            Reset path
-          </Button>
-        </>
-      )}
-    </div>
+        <Button variant="ghost" onClick={reset}>
+          Reset path
+        </Button>
+      </div>
+    </DailyGameCard>
   )
 }

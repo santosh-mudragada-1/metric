@@ -11,6 +11,8 @@ export interface DailyGameConfig {
   name: string
   /** Lowercase, editorial fragment used as supporting copy. */
   blurb: string
+  /** Fuller rules shown on the pre-start card, one sentence or two. */
+  howTo: string
   /** Small looping visual that gives the puzzle life in the index — not a static icon. */
   Preview: ComponentType
   accent: 'zip' | 'tango' | 'queens' | 'patches' | 'hardword'
@@ -21,6 +23,7 @@ export const DAILY_GAMES: DailyGameConfig[] = [
     id: 'zip',
     name: 'Zip',
     blurb: 'Draw one path through every cell, in order.',
+    howTo: 'Drag from 1 through every number, filling every square, without lifting your finger.',
     Preview: ZipPreview,
     accent: 'zip',
   },
@@ -28,6 +31,7 @@ export const DAILY_GAMES: DailyGameConfig[] = [
     id: 'tango',
     name: 'Tango',
     blurb: 'Balance the sun and moons, no three in a row.',
+    howTo: 'Tap a cell to cycle sun, moon, empty. Every row and column needs three of each, never three in a row.',
     Preview: TangoPreview,
     accent: 'tango',
   },
@@ -35,6 +39,7 @@ export const DAILY_GAMES: DailyGameConfig[] = [
     id: 'queens',
     name: 'Queens',
     blurb: 'One crown per row, column, and color.',
+    howTo: 'Tap once to mark, twice for a crown. One crown per row, column, and color — none touching, even diagonally.',
     Preview: QueensPreview,
     accent: 'queens',
   },
@@ -42,6 +47,7 @@ export const DAILY_GAMES: DailyGameConfig[] = [
     id: 'patches',
     name: 'Patches',
     blurb: 'Carve the grid into rectangles that match their number.',
+    howTo: 'Drag to carve out a rectangle — each one should hold exactly one number equal to its own area. Cover every cell.',
     Preview: PatchesPreview,
     accent: 'patches',
   },
@@ -49,6 +55,7 @@ export const DAILY_GAMES: DailyGameConfig[] = [
     id: 'hardword',
     name: 'Hardword',
     blurb: 'Guess the hidden word in eight tries.',
+    howTo: 'Guess the hidden four-letter word. Green means right letter, right spot — yellow means right letter, wrong spot.',
     Preview: HardwordPreview,
     accent: 'hardword',
   },

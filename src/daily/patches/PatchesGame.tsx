@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { generatePatches, isPatchesSolved, PATCHES_PALETTE, type Rect } from '@/daily/patches/generatePatches'
 import { useDailyPuzzle } from '@/daily/shared/useDailyPuzzle'
-import { DailyComplete } from '@/daily/shared/DailyComplete'
+import { DailyGameCard } from '@/daily/shared/DailyGameCard'
 import { Button } from '@/components/ui/Button'
 import { playClick } from '@/lib/sound/sfx'
 
@@ -54,7 +54,6 @@ export function PatchesGame() {
     cellsOf(rect, width).some((i) => coveredBy.has(i) && coveredBy.get(i) !== excludeIdx)
 
   const beginDrag = (x: number, y: number) => {
-    if (completedToday) return
     setDragStart({ x, y })
     setDragCurrent({ x, y })
   }
@@ -109,54 +108,51 @@ export function PatchesGame() {
   const dragRect = dragStart && dragCurrent ? boundsOf(dragStart, dragCurrent) : null
 
   return (
-    <div className="flex flex-col items-center gap-6">
-      {completedToday ? (
-        <DailyComplete gameId="patches" progress={progress} />
-      ) : (
-        <>
-          <div
-            className={`grid touch-none gap-[2px] select-none transition-transform ${rejectFlash ? 'animate-pulse' : ''}`}
-            style={{ gridTemplateColumns: `repeat(${width}, minmax(0, 1fr))`, width: 'min(92vw, 32rem)' }}
-            onPointerUp={endDrag}
-            onPointerLeave={() => dragStart && endDrag()}
-          >
-            {Array.from({ length: width * height }, (_, idx) => {
-              const x = idx % width
-              const y = Math.floor(idx / width)
-              const rectIdx = coveredBy.get(idx)
-              const color = rectIdx !== undefined ? PATCHES_PALETTE[rectIdx % PATCHES_PALETTE.length] : null
-              const inDrag =
-                dragRect && x >= dragRect.x && x < dragRect.x + dragRect.w && y >= dragRect.y && y < dragRect.y + dragRect.h
-              const clueValue = clueAt.get(idx)
+    <DailyGameCard
+      gameId="patches"
+      completedToday={completedToday}
+      progress={progress}
+      hasProgress={rects.length > 0}
+    >
+      <div className="flex flex-col items-center gap-6">
+        <div
+          className={`grid touch-none gap-[2px] select-none transition-transform ${rejectFlash ? 'animate-pulse' : ''}`}
+          style={{ gridTemplateColumns: `repeat(${width}, minmax(0, 1fr))`, width: 'min(92vw, 32rem)' }}
+          onPointerUp={endDrag}
+          onPointerLeave={() => dragStart && endDrag()}
+        >
+          {Array.from({ length: width * height }, (_, idx) => {
+            const x = idx % width
+            const y = Math.floor(idx / width)
+            const rectIdx = coveredBy.get(idx)
+            const color = rectIdx !== undefined ? PATCHES_PALETTE[rectIdx % PATCHES_PALETTE.length] : null
+            const inDrag =
+              dragRect && x >= dragRect.x && x < dragRect.x + dragRect.w && y >= dragRect.y && y < dragRect.y + dragRect.h
+            const clueValue = clueAt.get(idx)
 
-              return (
-                <div
-                  key={idx}
-                  onPointerDown={() => beginDrag(x, y)}
-                  onPointerEnter={() => updateDrag(x, y)}
-                  className="relative flex aspect-square cursor-pointer items-center justify-center rounded-[3px] border border-border bg-surface"
-                  style={color ? { backgroundColor: `${color}33`, boxShadow: `inset 0 0 0 1px ${color}80` } : undefined}
-                >
-                  {inDrag && <div className="absolute inset-0 rounded-[3px] bg-text/15" />}
-                  {clueValue !== undefined && (
-                    <span className="relative z-10 font-display text-sm font-bold text-text sm:text-base">
-                      {clueValue}
-                    </span>
-                  )}
-                </div>
-              )
-            })}
-          </div>
+            return (
+              <div
+                key={idx}
+                onPointerDown={() => beginDrag(x, y)}
+                onPointerEnter={() => updateDrag(x, y)}
+                className="relative flex aspect-square cursor-pointer items-center justify-center rounded-[3px] border border-border bg-surface"
+                style={color ? { backgroundColor: `${color}33`, boxShadow: `inset 0 0 0 1px ${color}80` } : undefined}
+              >
+                {inDrag && <div className="absolute inset-0 rounded-[3px] bg-text/15" />}
+                {clueValue !== undefined && (
+                  <span className="relative z-10 font-display text-sm font-bold text-text sm:text-base">
+                    {clueValue}
+                  </span>
+                )}
+              </div>
+            )
+          })}
+        </div>
 
-          <p className="max-w-md text-center text-sm text-text-muted">
-            Drag to carve out a rectangle — each one should hold exactly one number equal to its own area. Cover
-            every cell.
-          </p>
-          <Button variant="ghost" onClick={clear}>
-            Clear all
-          </Button>
-        </>
-      )}
-    </div>
+        <Button variant="ghost" onClick={clear}>
+          Clear all
+        </Button>
+      </div>
+    </DailyGameCard>
   )
 }

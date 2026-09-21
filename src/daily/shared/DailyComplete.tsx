@@ -80,22 +80,15 @@ export function DailyComplete({ gameId, progress }: { gameId: DailyGameId; progr
           </Button>
         ) : (
           <div
-            className={`flex w-full items-center justify-center gap-1.5 rounded-full border border-border-strong
-              px-4 py-3.5 font-display text-[0.8125rem] font-medium ${classes.text}`}
+            className={`flex h-13 w-full items-center justify-center gap-1.5 rounded-full border border-border-strong
+              px-4 font-display text-base font-medium ${classes.text}`}
           >
-            <CheckIcon className="h-4 w-4" />
+            <CheckIcon className="h-4 w-4 shrink-0" />
             <span>All five solved today — see you tomorrow</span>
           </div>
         )}
 
-        <button
-          type="button"
-          disabled={shareState === 'copied'}
-          onClick={share}
-          className="flex h-13 w-full cursor-pointer items-center justify-center gap-1.5 rounded-full border
-            border-border-strong bg-surface-raised px-4 font-display text-[0.8125rem] font-medium text-text
-            transition-colors hover:border-text-muted hover:bg-surface-hover disabled:cursor-default disabled:opacity-70"
-        >
+        <Button variant="ghost" size="lg" disabled={shareState === 'copied'} onClick={share} className="w-full">
           {shareState === 'copied' ? (
             <>
               <CheckIcon className="h-4 w-4 shrink-0 text-success" />
@@ -107,10 +100,11 @@ export function DailyComplete({ gameId, progress }: { gameId: DailyGameId; progr
               <span>Share result</span>
             </>
           )}
-        </button>
+        </Button>
 
         <Button
           variant="ghost"
+          size="lg"
           onClick={() => {
             playBack()
             navigate('/daily')

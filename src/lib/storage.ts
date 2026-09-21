@@ -132,13 +132,14 @@ export type DailyProgressMap = Partial<Record<DailyGameId, DailyProgress>>
 
 const EMPTY_DAILY_PROGRESS: DailyProgress = { streak: 0, lastCompletedDate: null, totalCompleted: 0 }
 
+// v2: bumped to invalidate progress saved by earlier, pre-launch builds of the Daily tab.
 export function getDailyProgress(gameId: DailyGameId): DailyProgress {
-  const map = read<DailyProgressMap>('dailyProgress', {})
+  const map = read<DailyProgressMap>('dailyProgressV2', {})
   return map[gameId] ?? EMPTY_DAILY_PROGRESS
 }
 
 export function recordDailyCompletion(gameId: DailyGameId, today: string, yesterday: string): DailyProgress {
-  const map = read<DailyProgressMap>('dailyProgress', {})
+  const map = read<DailyProgressMap>('dailyProgressV2', {})
   const prev = map[gameId] ?? EMPTY_DAILY_PROGRESS
 
   if (prev.lastCompletedDate === today) return prev // already recorded today
@@ -150,17 +151,17 @@ export function recordDailyCompletion(gameId: DailyGameId, today: string, yester
     totalCompleted: prev.totalCompleted + 1,
   }
   map[gameId] = next
-  write('dailyProgress', map)
+  write('dailyProgressV2', map)
   return next
 }
 
 /** Persists in-progress board state per game per day, so a refresh doesn't lose work. */
 export function getDailyState<T>(gameId: DailyGameId, dateKey: string, fallback: T): T {
-  const wrapper = read<{ date: string; value: T } | null>(`dailyState:${gameId}`, null)
+  const wrapper = read<{ date: string; value: T } | null>(`dailyStateV2:${gameId}`, null)
   if (!wrapper || wrapper.date !== dateKey) return fallback
   return wrapper.value
 }
 
 export function setDailyState<T>(gameId: DailyGameId, dateKey: string, value: T): void {
-  write(`dailyState:${gameId}`, { date: dateKey, value })
+  write(`dailyStateV2:${gameId}`, { date: dateKey, value })
 }
