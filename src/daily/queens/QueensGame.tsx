@@ -11,10 +11,18 @@ function nextCell(v: QueensCell): QueensCell {
   return v === 0 ? 1 : v === 1 ? 2 : 0
 }
 
-function Crown({ color }: { color: string }) {
+const CROWN_COLOR = '#f0b429'
+
+function Crown() {
   return (
-    <svg viewBox="0 0 24 24" className="h-1/2 w-1/2" fill={color}>
-      <path d="M4 18h16l-1.2-8.2-3.6 2.7L12 6l-3.2 6.5-3.6-2.7L4 18Z" />
+    <svg viewBox="0 0 24 24" className="h-1/2 w-1/2">
+      <path
+        d="M4 18h16l-1.2-8.2-3.6 2.7L12 6l-3.2 6.5-3.6-2.7L4 18Z"
+        fill={CROWN_COLOR}
+        stroke="#00000055"
+        strokeWidth="1"
+        strokeLinejoin="round"
+      />
     </svg>
   )
 }
@@ -54,11 +62,11 @@ export function QueensGame() {
                 key={idx}
                 type="button"
                 onClick={() => toggle(idx)}
-                className="relative flex aspect-square cursor-pointer items-center justify-center transition-transform duration-100 active:scale-95"
-                style={{ backgroundColor: `${color}4d`, boxShadow: `inset 0 0 0 1px ${color}99` }}
+                className="relative flex aspect-square cursor-pointer items-center justify-center border border-border-strong transition-transform duration-100 active:scale-95"
+                style={{ backgroundColor: `${color}cc` }}
               >
-                {value === 1 && <span className="h-1.5 w-1.5 rounded-full bg-text-muted" />}
-                {value === 2 && <Crown color={color} />}
+                {value === 1 && <span className="font-display text-lg font-bold text-text/70 sm:text-xl">×</span>}
+                {value === 2 && <Crown />}
               </button>
             )
           })}

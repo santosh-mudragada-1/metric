@@ -46,9 +46,21 @@ export function PatchesGame() {
   const [dragCurrent, setDragCurrent] = useState<Point | null>(null)
   const [rejectFlash, setRejectFlash] = useState(false)
 
-  const clueAt = new Map(clues.map((c) => [c.idx, c.value]))
+  const clueAt = new Map(clues.map((c) => [c.idx, c]))
   const coveredBy = new Map<number, number>()
   rects.forEach((rect, ri) => cellsOf(rect, width).forEach((i) => coveredBy.set(i, ri)))
+
+  // Per placed rectangle: its color (from whichever seed it contains) and whether it's the right size.
+  const rectInfo = rects.map((rect, ri) => {
+    const containedClue = clues.find((c) => {
+      const cx = c.idx % width
+      const cy = Math.floor(c.idx / width)
+      return cx >= rect.x && cx < rect.x + rect.w && cy >= rect.y && cy < rect.y + rect.h
+    })
+    const color = containedClue?.color ?? PATCHES_PALETTE[ri % PATCHES_PALETTE.length]
+    const isComplete = containedClue ? rect.w * rect.h === containedClue.value : true
+    return { color, isComplete, clueIdx: containedClue?.idx }
+  })
 
   const overlaps = (rect: Rect, excludeIdx?: number): boolean =>
     cellsOf(rect, width).some((i) => coveredBy.has(i) && coveredBy.get(i) !== excludeIdx)
@@ -116,7 +128,7 @@ export function PatchesGame() {
     >
       <div className="flex flex-col items-center gap-6">
         <div
-          className={`grid touch-none gap-[2px] select-none transition-transform ${rejectFlash ? 'animate-pulse' : ''}`}
+          className={`grid touch-none select-none transition-transform ${rejectFlash ? 'animate-pulse' : ''}`}
           style={{ gridTemplateColumns: `repeat(${width}, minmax(0, 1fr))`, width: 'min(92vw, 32rem)' }}
           onPointerUp={endDrag}
           onPointerLeave={() => dragStart && endDrag()}
@@ -125,24 +137,29 @@ export function PatchesGame() {
             const x = idx % width
             const y = Math.floor(idx / width)
             const rectIdx = coveredBy.get(idx)
-            const color = rectIdx !== undefined ? PATCHES_PALETTE[rectIdx % PATCHES_PALETTE.length] : null
+            const info = rectIdx !== undefined ? rectInfo[rectIdx] : null
+            const clue = clueAt.get(idx)
             const inDrag =
               dragRect && x >= dragRect.x && x < dragRect.x + dragRect.w && y >= dragRect.y && y < dragRect.y + dragRect.h
-            const clueValue = clueAt.get(idx)
 
             return (
               <div
                 key={idx}
                 onPointerDown={() => beginDrag(x, y)}
                 onPointerEnter={() => updateDrag(x, y)}
-                className="relative flex aspect-square cursor-pointer items-center justify-center rounded-[3px] border border-border bg-surface"
-                style={color ? { backgroundColor: `${color}33`, boxShadow: `inset 0 0 0 1px ${color}80` } : undefined}
+                className="relative flex aspect-square cursor-pointer items-center justify-center border border-dashed border-border/70"
               >
-                {inDrag && <div className="absolute inset-0 rounded-[3px] bg-text/15" />}
-                {clueValue !== undefined && (
-                  <span className="relative z-10 font-display text-sm font-bold text-text sm:text-base">
-                    {clueValue}
-                  </span>
+                {info && (
+                  <div className="absolute inset-0" style={{ backgroundColor: `${info.color}${info.isComplete ? 'cc' : '80'}` }} />
+                )}
+                {inDrag && <div className="absolute inset-0 bg-text/15" />}
+                {clue && (!info || (!info.isComplete && info.clueIdx === idx)) && (
+                  <div
+                    className="absolute inset-[12%] flex items-center justify-center rounded-lg border-2 border-dashed"
+                    style={{ backgroundColor: `${clue.color}66`, borderColor: clue.color }}
+                  >
+                    <span className="font-display text-sm font-bold text-text sm:text-base">{clue.value}</span>
+                  </div>
                 )}
               </div>
             )
@@ -152,6 +169,15 @@ export function PatchesGame() {
         <Button variant="ghost" onClick={clear}>
           Clear all
         </Button>
+
+        <div className="w-full max-w-md rounded-2xl border border-border-strong bg-surface-raised p-4 text-left">
+          <p className="mb-2 font-display text-sm font-semibold text-text">How to play</p>
+          <ul className="list-disc space-y-1 pl-4 text-sm text-text-muted">
+            <li>Each colored seed must grow into a rectangle worth exactly its number of cells.</li>
+            <li>Drag to size a rectangle around a seed — every rectangle holds exactly one seed.</li>
+            <li>Cover every cell on the board to solve it.</li>
+          </ul>
+        </div>
       </div>
     </DailyGameCard>
   )

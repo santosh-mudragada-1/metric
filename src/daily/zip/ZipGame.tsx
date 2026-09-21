@@ -1,5 +1,6 @@
 import { useRef, type CSSProperties } from 'react'
 import { generateZip } from '@/daily/zip/generateZip'
+import { zipColorAt } from '@/daily/zip/pathColor'
 import { useDailyPuzzle } from '@/daily/shared/useDailyPuzzle'
 import { DailyGameCard } from '@/daily/shared/DailyGameCard'
 import { Button } from '@/components/ui/Button'
@@ -23,10 +24,10 @@ function dirTo(size: number, from: number, to: number): 'up' | 'down' | 'left' |
 }
 
 const STUB_STYLE: Record<string, CSSProperties> = {
-  up: { left: '32%', top: 0, width: '36%', height: '50%' },
-  down: { left: '32%', top: '50%', width: '36%', height: '50%' },
-  left: { left: 0, top: '32%', width: '50%', height: '36%' },
-  right: { left: '50%', top: '32%', width: '50%', height: '36%' },
+  up: { left: '26%', top: 0, width: '48%', height: '54%' },
+  down: { left: '26%', top: '46%', width: '48%', height: '54%' },
+  left: { left: 0, top: '26%', width: '54%', height: '48%' },
+  right: { left: '46%', top: '26%', width: '54%', height: '48%' },
 }
 
 export function ZipGame() {
@@ -82,6 +83,7 @@ export function ZipGame() {
             const prevIdx = posInPath > 0 ? path[posInPath - 1] : null
             const nextIdx = posInPath !== -1 && posInPath < path.length - 1 ? path[posInPath + 1] : null
             const number = checkpoints[idx]
+            const color = inPath ? zipColorAt(posInPath / Math.max(total - 1, 1)) : null
 
             return (
               <div
@@ -89,25 +91,23 @@ export function ZipGame() {
                 onPointerDown={() => extendTo(idx)}
                 onPointerEnter={() => drawing.current && extendTo(idx)}
                 className={`relative aspect-square rounded-md border transition-colors duration-100 ${
-                  inPath ? 'border-accent-zip/60 bg-accent-zip-dim' : 'border-border bg-surface'
+                  inPath ? 'border-transparent' : 'border-border bg-surface'
                 }`}
               >
-                {inPath && prevIdx !== null && (
-                  <div className="absolute rounded-sm bg-accent-zip/70" style={STUB_STYLE[dirTo(size, idx, prevIdx)]} />
-                )}
-                {inPath && nextIdx !== null && (
-                  <div className="absolute rounded-sm bg-accent-zip/70" style={STUB_STYLE[dirTo(size, idx, nextIdx)]} />
+                {inPath && color && (
+                  <>
+                    <div className="absolute inset-[16%] rounded-full" style={{ backgroundColor: color }} />
+                    {prevIdx !== null && (
+                      <div className="absolute rounded-full" style={{ ...STUB_STYLE[dirTo(size, idx, prevIdx)], backgroundColor: color }} />
+                    )}
+                    {nextIdx !== null && (
+                      <div className="absolute rounded-full" style={{ ...STUB_STYLE[dirTo(size, idx, nextIdx)], backgroundColor: color }} />
+                    )}
+                  </>
                 )}
                 {number !== 0 && (
-                  <span
-                    className={`relative z-10 flex h-full w-full items-center justify-center font-display text-lg
-                      font-semibold ${inPath ? 'text-on-invert' : 'text-text'}`}
-                  >
-                    <span
-                      className={`flex h-[62%] w-[62%] items-center justify-center rounded-full ${
-                        inPath ? 'bg-accent-zip text-on-invert' : 'border border-border-strong text-text'
-                      }`}
-                    >
+                  <span className="relative z-10 flex h-full w-full items-center justify-center font-display text-lg font-semibold">
+                    <span className="flex h-[62%] w-[62%] items-center justify-center rounded-full bg-ink text-chalk">
                       {number}
                     </span>
                   </span>

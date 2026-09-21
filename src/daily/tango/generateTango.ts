@@ -3,7 +3,7 @@ import { shuffle } from '@/lib/dailySeed'
 
 export const TANGO_SIZE = 6
 export const TANGO_MIN_GIVENS = 10
-export const TANGO_RELATION_CLUES = 4
+export const TANGO_RELATION_CLUES = 5
 
 /** 0 = empty, 1 = sun, 2 = moon */
 export type TangoSymbol = 0 | 1 | 2

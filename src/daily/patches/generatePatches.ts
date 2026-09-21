@@ -1,4 +1,5 @@
 import type { Rng } from '@/lib/dailySeed'
+import { shuffle } from '@/lib/dailySeed'
 
 export const PATCHES_WIDTH = 8
 export const PATCHES_HEIGHT = 6
@@ -27,6 +28,8 @@ export interface Rect {
 export interface PatchesClue {
   idx: number
   value: number
+  /** Stable per-piece color, assigned at generation time (not draw order). */
+  color: string
 }
 
 export interface PatchesPuzzle {
@@ -70,10 +73,11 @@ export function generatePatches(rng: Rng): PatchesPuzzle {
   const pieces: Rect[] = []
   subdivide(rng, { x: 0, y: 0, w: width, h: height }, pieces)
 
-  const clues: PatchesClue[] = pieces.map((rect) => {
+  const colors = shuffle(rng, PATCHES_PALETTE)
+  const clues: PatchesClue[] = pieces.map((rect, i) => {
     const cx = rect.x + Math.floor(rng() * rect.w)
     const cy = rect.y + Math.floor(rng() * rect.h)
-    return { idx: cy * width + cx, value: rect.w * rect.h }
+    return { idx: cy * width + cx, value: rect.w * rect.h, color: colors[i % colors.length] }
   })
 
   return { width, height, clues }
