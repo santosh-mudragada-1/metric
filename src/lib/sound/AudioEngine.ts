@@ -15,12 +15,25 @@ class AudioEngine {
 
   private unlock = () => {
     if (this.unlocked) return
-    const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
-    this.context = new Ctor()
-    this.master = this.context.createGain()
-    this.master.gain.value = this.mutedState ? 0 : 0.6
-    this.master.connect(this.context.destination)
     this.unlocked = true
+    const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+    const context = new Ctor()
+    const master = context.createGain()
+    master.gain.value = this.mutedState ? 0 : 0.6
+    master.connect(context.destination)
+    this.context = context
+    this.master = master
+
+    // Acquiring the real audio output stream has startup latency on a fresh page
+    // load; without this, the first short one-shot sfx get scheduled and elapse
+    // before the audio thread is actually producing samples, so they play silently.
+    // Playing a silent buffer immediately forces the stream to spin up right away.
+    void context.resume().then(() => {
+      const primer = context.createBufferSource()
+      primer.buffer = context.createBuffer(1, 1, context.sampleRate)
+      primer.connect(context.destination)
+      primer.start()
+    })
   }
 
   get ctx(): AudioContext | null {

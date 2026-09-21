@@ -36,12 +36,14 @@ export function SequenceMemoryBoard({
   onTileTap,
 }: SequenceMemoryBoardProps) {
   const [activeTile, setActiveTile] = useState<number | null>(null)
+  const [showStage, setShowStage] = useState<'flashing' | 'ready'>('flashing')
   const gridRef = useRef<HTMLDivElement>(null)
   const onShowCompleteRef = useRef(onShowComplete)
   onShowCompleteRef.current = onShowComplete
 
   useGSAP(() => {
     if (phase !== 'showing' || sequence.length === 0) return
+    setShowStage('flashing')
     const flashOn = SEQUENCE_MEMORY.flashOnMs / 1000
     const flashGap = SEQUENCE_MEMORY.flashGapMs / 1000
     const tl = gsap.timeline({ onComplete: () => onShowCompleteRef.current() })
@@ -54,6 +56,7 @@ export function SequenceMemoryBoard({
         .call(() => setActiveTile(null))
         .to({}, { duration: flashGap })
     })
+    tl.call(() => setShowStage('ready'))
     tl.to({}, { duration: SEQUENCE_MEMORY.betweenRoundsMs / 1000 })
     return () => {
       tl.kill()
@@ -103,10 +106,13 @@ export function SequenceMemoryBoard({
         level {String(sequence.length).padStart(2, '0')}
       </div>
 
-      <p
-        className={`font-mono text-xs tracking-[0.14em] text-text-dim uppercase tabular-nums ${phase === 'input' ? '' : 'invisible'}`}
-      >
-        {userProgress} / {sequence.length}
+      <p className="font-mono text-xs tracking-[0.14em] text-text-dim uppercase tabular-nums">
+        {phase === 'showing' && showStage === 'flashing' && 'playing sequence…'}
+        {phase === 'showing' && showStage === 'ready' && (
+          <span className="text-accent-sequence live-loop">get ready…</span>
+        )}
+        {phase === 'input' && `${userProgress} / ${sequence.length}`}
+        {(phase === 'wrongTile' || phase === 'levelUp') && ' '}
       </p>
 
       <div ref={gridRef} className="grid w-72 grid-cols-3 gap-3 sm:w-96 sm:gap-4">
