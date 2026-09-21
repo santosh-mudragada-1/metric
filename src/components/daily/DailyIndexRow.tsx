@@ -4,7 +4,6 @@ import { playClick } from '@/lib/sound/sfx'
 import { withViewTransition } from '@/lib/viewTransition'
 import { getDailyProgress, type DailyProgress } from '@/lib/storage'
 import { todayKey } from '@/lib/dailySeed'
-import { DailyGameIcon } from '@/components/daily/DailyGameIcon'
 import { AnimatedHeading } from '@/components/ui/AnimatedHeading'
 import type { DailyGameConfig } from '@/dailyGames.config'
 
@@ -26,6 +25,7 @@ export function DailyIndexRow({ game, index }: { game: DailyGameConfig; index: n
   const navigate = useNavigate()
   const progress = getDailyProgress(game.id)
   const completedToday = progress.lastCompletedDate === todayKey()
+  const Preview = game.Preview
 
   const go = () => {
     playClick()
@@ -58,7 +58,7 @@ export function DailyIndexRow({ game, index }: { game: DailyGameConfig; index: n
       </div>
 
       <div className="hidden h-11 w-11 shrink-0 items-center justify-center opacity-60 transition-opacity duration-200 group-hover:opacity-100 sm:flex">
-        <DailyGameIcon gameId={game.id} className="h-11 w-11" />
+        <Preview />
       </div>
 
       <div className="flex shrink-0 flex-col items-end gap-2">
