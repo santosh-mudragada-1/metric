@@ -119,3 +119,48 @@ export function getStoredTheme(): Theme | null {
 export function setStoredTheme(theme: Theme): void {
   write('theme', theme)
 }
+
+export type DailyGameId = 'zip' | 'tango' | 'queens' | 'patches' | 'hardword'
+
+export interface DailyProgress {
+  streak: number
+  lastCompletedDate: string | null
+  totalCompleted: number
+}
+
+export type DailyProgressMap = Partial<Record<DailyGameId, DailyProgress>>
+
+const EMPTY_DAILY_PROGRESS: DailyProgress = { streak: 0, lastCompletedDate: null, totalCompleted: 0 }
+
+export function getDailyProgress(gameId: DailyGameId): DailyProgress {
+  const map = read<DailyProgressMap>('dailyProgress', {})
+  return map[gameId] ?? EMPTY_DAILY_PROGRESS
+}
+
+export function recordDailyCompletion(gameId: DailyGameId, today: string, yesterday: string): DailyProgress {
+  const map = read<DailyProgressMap>('dailyProgress', {})
+  const prev = map[gameId] ?? EMPTY_DAILY_PROGRESS
+
+  if (prev.lastCompletedDate === today) return prev // already recorded today
+
+  const nextStreak = prev.lastCompletedDate === yesterday ? prev.streak + 1 : 1
+  const next: DailyProgress = {
+    streak: nextStreak,
+    lastCompletedDate: today,
+    totalCompleted: prev.totalCompleted + 1,
+  }
+  map[gameId] = next
+  write('dailyProgress', map)
+  return next
+}
+
+/** Persists in-progress board state per game per day, so a refresh doesn't lose work. */
+export function getDailyState<T>(gameId: DailyGameId, dateKey: string, fallback: T): T {
+  const wrapper = read<{ date: string; value: T } | null>(`dailyState:${gameId}`, null)
+  if (!wrapper || wrapper.date !== dateKey) return fallback
+  return wrapper.value
+}
+
+export function setDailyState<T>(gameId: DailyGameId, dateKey: string, value: T): void {
+  write(`dailyState:${gameId}`, { date: dateKey, value })
+}

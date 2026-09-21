@@ -81,6 +81,18 @@
   --color-accent-typing: #fb4570;
   --color-accent-typing-dim: #fb45701f;
 
+  /* Daily puzzle accents — same "one identity color per game" rule as above */
+  --color-accent-zip: #3b82f6;
+  --color-accent-zip-dim: #3b82f61f;
+  --color-accent-tango: #f97316;
+  --color-accent-tango-dim: #f973161f;
+  --color-accent-queens: #d946ef;
+  --color-accent-queens-dim: #d946ef1f;
+  --color-accent-patches: #059669;
+  --color-accent-patches-dim: #0596691f;
+  --color-accent-hardword: #eab308;
+  --color-accent-hardword-dim: #eab3081f;
+
   --color-success: #2fd67c;
   --color-success-dim: #2fd67c1f;
   --color-danger: #ff5d5d;

@@ -15,6 +15,7 @@ import { enterMode } from '@/lib/animation/presets'
 
 const NAV_ITEMS = [
   { to: '/', label: 'Play', end: true },
+  { to: '/daily', label: 'Daily', end: false },
   { to: '/party', label: 'Party', end: false },
   { to: '/stats', label: 'Stats', end: false },
 ]

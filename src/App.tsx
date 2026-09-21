@@ -8,6 +8,8 @@ import GamePage from '@/routes/GamePage'
 import MultiplayerLobby from '@/routes/MultiplayerLobby'
 import MultiplayerRoom from '@/routes/MultiplayerRoom'
 import StatsPage from '@/routes/StatsPage'
+import DailyHome from '@/routes/DailyHome'
+import DailyGamePage from '@/routes/DailyGamePage'
 import NotFound from '@/routes/NotFound'
 import { registerReducedMotion } from '@/lib/animation/gsapConfig'
 import { AuthProvider } from '@/lib/auth/AuthContext'
@@ -19,6 +21,8 @@ const router = createBrowserRouter([
     children: [
       { path: '/', element: <DashboardHome /> },
       { path: '/play/:gameId', element: <GamePage /> },
+      { path: '/daily', element: <DailyHome /> },
+      { path: '/daily/:gameId', element: <DailyGamePage /> },
       { path: '/party', element: <MultiplayerLobby /> },
       { path: '/party/:roomCode', element: <MultiplayerRoom /> },
       { path: '/stats', element: <StatsPage /> },
