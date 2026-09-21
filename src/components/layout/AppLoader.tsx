@@ -1,68 +1,108 @@
 import { useRef } from 'react'
 import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
-import { useTheme } from '@/hooks/useTheme'
 
 interface AppLoaderProps {
   onDone: () => void
 }
 
+// One column per game accent — same eight colors the dashboard's game rows use,
+// so the panels that sweep the splash away read as "this app," not stock chrome.
+const ACCENTS = [
+  'var(--color-accent-reaction)',
+  'var(--color-accent-aim)',
+  'var(--color-accent-sequence)',
+  'var(--color-accent-number)',
+  'var(--color-accent-chimp)',
+  'var(--color-accent-visual)',
+  'var(--color-accent-verbal)',
+  'var(--color-accent-typing)',
+]
+
 export function AppLoader({ onDone }: AppLoaderProps) {
-  const { theme } = useTheme()
   const rootRef = useRef<HTMLDivElement>(null)
-  const logoRef = useRef<HTMLImageElement>(null)
-  const ring1Ref = useRef<HTMLDivElement>(null)
-  const ring2Ref = useRef<HTMLDivElement>(null)
-  const sweepRef = useRef<HTMLDivElement>(null)
+  const baseRef = useRef<HTMLDivElement>(null)
+  const barRefs = useRef<(HTMLDivElement | null)[]>([])
+  const counterRef = useRef<HTMLSpanElement>(null)
+  const counterWrapRef = useRef<HTMLDivElement>(null)
+  const ruleFillRef = useRef<HTMLDivElement>(null)
 
   useGSAP(() => {
+    const bars = barRefs.current.filter((el): el is HTMLDivElement => el !== null)
+    gsap.set(bars, { scaleY: 0.05, transformOrigin: 'bottom center' })
+    gsap.set(ruleFillRef.current, { scaleX: 0, transformOrigin: 'left center' })
+
+    const idle = gsap.to(bars, {
+      scaleY: 0.16,
+      duration: 0.55,
+      ease: 'sine.inOut',
+      yoyo: true,
+      repeat: -1,
+      stagger: { each: 0.09, from: 'start' },
+    })
+
+    const counter = { value: 0 }
     const tl = gsap.timeline({ onComplete: onDone })
 
-    tl.fromTo(
-      logoRef.current,
-      { scale: 0.3, opacity: 0, rotate: -14, clipPath: 'inset(0 100% 0 0)' },
-      { scale: 1, opacity: 1, rotate: 0, clipPath: 'inset(0 0% 0 0)', duration: 0.6, ease: 'dialedOut' },
-      0,
-    )
-      .fromTo(
-        sweepRef.current,
-        { xPercent: -140, opacity: 0.9 },
-        { xPercent: 140, opacity: 0, duration: 0.5, ease: 'power2.in' },
-        0.15,
+    tl.to(counter, {
+      value: 100,
+      duration: 1.5,
+      ease: 'power2.inOut',
+      onUpdate: () => {
+        const displayed = Math.round(counter.value)
+        if (counterRef.current) counterRef.current.textContent = String(displayed).padStart(2, '0')
+        gsap.set(ruleFillRef.current, { scaleX: displayed / 100 })
+      },
+    })
+      .call(() => idle.kill())
+      .to(counterWrapRef.current, { opacity: 0, y: -20, duration: 0.25, ease: 'power2.in' }, '<')
+      .to(
+        bars,
+        { scaleY: 1, duration: 0.55, ease: 'power4.inOut', stagger: { each: 0.045, from: 'edges' } },
+        '<',
       )
-      .fromTo(
-        [ring1Ref.current, ring2Ref.current],
-        { scale: 0.5, opacity: 0.5 },
-        { scale: 2.2, opacity: 0, duration: 0.9, ease: 'power2.out', stagger: 0.18 },
-        0.1,
+      .to(
+        [...bars, baseRef.current],
+        { yPercent: -100, duration: 0.65, ease: 'power4.inOut', stagger: { each: 0.045, from: 'edges' } },
+        '+=0.18',
       )
-      .to(rootRef.current, { opacity: 0, scale: 1.04, duration: 0.35, ease: 'power2.in' }, '+=0.3')
 
     return () => {
+      idle.kill()
       tl.kill()
     }
   }, [])
 
   return (
-    <div
-      ref={rootRef}
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-canvas"
-      aria-hidden="true"
-    >
-      <div className="relative flex h-20 w-20 items-center justify-center">
-        <div ref={ring1Ref} className="absolute inset-0 rounded-full border border-signal" />
-        <div ref={ring2Ref} className="absolute inset-0 rounded-full border border-signal" />
-        <div className="relative inline-block overflow-hidden">
-          <img
-            ref={logoRef}
-            src={theme === 'dark' ? '/logo-dark.svg' : '/logo.svg'}
-            alt=""
-            className="h-10 w-auto opacity-0"
-          />
-          <div
-            ref={sweepRef}
-            className="pointer-events-none absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-signal/70 to-transparent opacity-0"
-          />
+    <div ref={rootRef} className="fixed inset-0 z-[100] overflow-hidden" aria-hidden="true">
+      <div ref={baseRef} className="absolute inset-0 bg-canvas" />
+      <div className="absolute inset-0 flex">
+        {ACCENTS.map((color, i) => (
+          <div key={i} className="relative h-full flex-1">
+            <div
+              ref={(el) => {
+                barRefs.current[i] = el
+              }}
+              className="absolute bottom-0 left-0 h-full w-full"
+              style={{ backgroundColor: color }}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="relative flex h-full flex-col items-center justify-center">
+        <div ref={counterWrapRef} className="flex flex-col items-center">
+          <div className="flex items-end">
+            <span
+              ref={counterRef}
+              className="font-display text-[clamp(4.5rem,20vw,12rem)] leading-none font-medium tracking-tight text-text tabular-nums"
+            >
+              00
+            </span>
+            <span className="mb-3 ml-1 font-display text-2xl text-text-dim sm:mb-5 sm:text-3xl">%</span>
+          </div>
+          <div className="relative mt-6 h-px w-40 overflow-hidden bg-border sm:w-56">
+            <div ref={ruleFillRef} className="absolute inset-y-0 left-0 w-full bg-signal" />
+          </div>
         </div>
       </div>
     </div>
