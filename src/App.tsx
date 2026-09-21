@@ -1,5 +1,6 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { createBrowserRouter, RouterProvider } from 'react-router'
+import { AppLoader } from '@/components/layout/AppLoader'
 import { AppShell } from '@/components/layout/AppShell'
 import DashboardHome from '@/routes/DashboardHome'
 import GamePage from '@/routes/GamePage'
@@ -25,12 +26,15 @@ const router = createBrowserRouter([
 ])
 
 function App() {
+  const [booting, setBooting] = useState(true)
+
   useEffect(() => {
     registerReducedMotion()
   }, [])
 
   return (
     <AuthProvider>
+      {booting && <AppLoader onDone={() => setBooting(false)} />}
       <RouterProvider router={router} />
     </AuthProvider>
   )
