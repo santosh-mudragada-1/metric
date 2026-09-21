@@ -2,7 +2,7 @@ import type { Rng } from '@/lib/dailySeed'
 import { WORD_LIST } from '@/daily/hardword/wordList'
 
 export const HARDWORD_MAX_GUESSES = 8
-export const HARDWORD_LENGTH = 5
+export const HARDWORD_LENGTH = 4
 
 export interface HardwordPuzzle {
   answer: string

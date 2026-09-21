@@ -3,16 +3,26 @@ import { TrophyIcon } from '@heroicons/react/24/solid'
 import { ArrowUpOnSquareIcon, CheckIcon } from '@heroicons/react/24/outline'
 import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
-import { playBack, playCopy } from '@/lib/sound/sfx'
-import { DAILY_ACCENT_CLASSES, DAILY_GAME_MAP } from '@/dailyGames.config'
-import type { DailyGameId } from '@/lib/storage'
-import type { DailyProgress } from '@/lib/storage'
+import { playBack, playClick, playCopy } from '@/lib/sound/sfx'
+import { withViewTransition } from '@/lib/viewTransition'
+import { DAILY_ACCENT_CLASSES, DAILY_GAMES, DAILY_GAME_MAP } from '@/dailyGames.config'
+import { getDailyProgress, type DailyGameId, type DailyProgress } from '@/lib/storage'
+import { todayKey } from '@/lib/dailySeed'
+
+function pickUnplayedGame(currentId: DailyGameId) {
+  const today = todayKey()
+  const candidates = DAILY_GAMES.filter(
+    (g) => g.id !== currentId && getDailyProgress(g.id).lastCompletedDate !== today,
+  )
+  return candidates[Math.floor(Math.random() * candidates.length)] ?? null
+}
 
 export function DailyComplete({ gameId, progress }: { gameId: DailyGameId; progress: DailyProgress }) {
   const navigate = useNavigate()
   const game = DAILY_GAME_MAP[gameId]
   const classes = DAILY_ACCENT_CLASSES[game.accent]
   const [shareState, setShareState] = useState<'idle' | 'copied'>('idle')
+  const nextGame = pickUnplayedGame(gameId)
 
   const share = async () => {
     const url = `${window.location.origin}/daily/${gameId}`
@@ -55,6 +65,29 @@ export function DailyComplete({ gameId, progress }: { gameId: DailyGameId; progr
       </div>
 
       <div className="flex w-full max-w-sm flex-col items-center gap-3">
+        {nextGame ? (
+          <Button
+            variant="primary"
+            size="lg"
+            chevron
+            onClick={() => {
+              playClick()
+              withViewTransition(() => navigate(`/daily/${nextGame.id}`))
+            }}
+            className="w-full"
+          >
+            Play {nextGame.name} next
+          </Button>
+        ) : (
+          <div
+            className={`flex w-full items-center justify-center gap-1.5 rounded-full border border-border-strong
+              px-4 py-3.5 font-display text-[0.8125rem] font-medium ${classes.text}`}
+          >
+            <CheckIcon className="h-4 w-4" />
+            <span>All five solved today — see you tomorrow</span>
+          </div>
+        )}
+
         <button
           type="button"
           disabled={shareState === 'copied'}
