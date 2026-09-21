@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { createBrowserRouter, RouterProvider } from 'react-router'
 import { AppLoader } from '@/components/layout/AppLoader'
 import { AppShell } from '@/components/layout/AppShell'
+import { EntryGate } from '@/components/auth/EntryGate'
 import DashboardHome from '@/routes/DashboardHome'
 import GamePage from '@/routes/GamePage'
 import MultiplayerLobby from '@/routes/MultiplayerLobby'
@@ -10,6 +11,7 @@ import StatsPage from '@/routes/StatsPage'
 import NotFound from '@/routes/NotFound'
 import { registerReducedMotion } from '@/lib/animation/gsapConfig'
 import { AuthProvider } from '@/lib/auth/AuthContext'
+import { useAuth } from '@/hooks/useAuth'
 
 const router = createBrowserRouter([
   {
@@ -25,17 +27,30 @@ const router = createBrowserRouter([
   },
 ])
 
-function App() {
+function AppContent() {
   const [booting, setBooting] = useState(true)
+  const [entryResolved, setEntryResolved] = useState(false)
+  const { user, loading } = useAuth()
 
+  const showGate = !booting && !loading && !user && !entryResolved
+
+  return (
+    <>
+      {booting && <AppLoader onDone={() => setBooting(false)} />}
+      {showGate && <EntryGate onResolved={() => setEntryResolved(true)} />}
+      <RouterProvider router={router} />
+    </>
+  )
+}
+
+function App() {
   useEffect(() => {
     registerReducedMotion()
   }, [])
 
   return (
     <AuthProvider>
-      {booting && <AppLoader onDone={() => setBooting(false)} />}
-      <RouterProvider router={router} />
+      <AppContent />
     </AuthProvider>
   )
 }
