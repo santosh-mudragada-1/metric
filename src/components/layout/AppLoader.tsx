@@ -1,10 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef } from 'react'
 import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
 import { useTheme } from '@/hooks/useTheme'
-
-const STATUS_STEPS = ['booting', 'calibrating', 'tap to start']
-const AUTO_DISMISS_MS = 6000
 
 interface AppLoaderProps {
   onDone: () => void
@@ -12,81 +9,61 @@ interface AppLoaderProps {
 
 export function AppLoader({ onDone }: AppLoaderProps) {
   const { theme } = useTheme()
-  const [exiting, setExiting] = useState(false)
-  const [statusIndex, setStatusIndex] = useState(0)
   const rootRef = useRef<HTMLDivElement>(null)
   const logoRef = useRef<HTMLImageElement>(null)
-  const barRef = useRef<HTMLDivElement>(null)
-  const dismissedRef = useRef(false)
+  const ring1Ref = useRef<HTMLDivElement>(null)
+  const ring2Ref = useRef<HTMLDivElement>(null)
+  const sweepRef = useRef<HTMLDivElement>(null)
 
   useGSAP(() => {
-    const tl = gsap.timeline()
-    tl.fromTo(logoRef.current, { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: 'dialedOut' })
+    const tl = gsap.timeline({ onComplete: onDone })
+
+    tl.fromTo(
+      logoRef.current,
+      { scale: 0.3, opacity: 0, rotate: -14, clipPath: 'inset(0 100% 0 0)' },
+      { scale: 1, opacity: 1, rotate: 0, clipPath: 'inset(0 0% 0 0)', duration: 0.6, ease: 'dialedOut' },
+      0,
+    )
       .fromTo(
-        barRef.current,
-        { scaleX: 0 },
-        { scaleX: 1, duration: 0.6, ease: 'power2.out', transformOrigin: 'left center' },
-        '<0.05',
+        sweepRef.current,
+        { xPercent: -140, opacity: 0.9 },
+        { xPercent: 140, opacity: 0, duration: 0.5, ease: 'power2.in' },
+        0.15,
       )
+      .fromTo(
+        [ring1Ref.current, ring2Ref.current],
+        { scale: 0.5, opacity: 0.5 },
+        { scale: 2.2, opacity: 0, duration: 0.9, ease: 'power2.out', stagger: 0.18 },
+        0.1,
+      )
+      .to(rootRef.current, { opacity: 0, scale: 1.04, duration: 0.35, ease: 'power2.in' }, '+=0.3')
+
     return () => {
       tl.kill()
     }
   }, [])
 
-  useEffect(() => {
-    const t1 = setTimeout(() => setStatusIndex(1), 380)
-    const t2 = setTimeout(() => setStatusIndex(2), 780)
-    return () => {
-      clearTimeout(t1)
-      clearTimeout(t2)
-    }
-  }, [])
-
-  useEffect(() => {
-    const dismiss = () => {
-      if (dismissedRef.current) return
-      dismissedRef.current = true
-      setExiting(true)
-    }
-    document.addEventListener('pointerdown', dismiss)
-    document.addEventListener('keydown', dismiss)
-    const fallback = setTimeout(dismiss, AUTO_DISMISS_MS)
-    return () => {
-      document.removeEventListener('pointerdown', dismiss)
-      document.removeEventListener('keydown', dismiss)
-      clearTimeout(fallback)
-    }
-  }, [])
-
-  useGSAP(() => {
-    if (!exiting) return
-    gsap.to(rootRef.current, {
-      opacity: 0,
-      scale: 1.03,
-      duration: 0.32,
-      ease: 'power2.in',
-      onComplete: onDone,
-    })
-  }, [exiting])
-
   return (
     <div
       ref={rootRef}
-      className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-5 bg-canvas"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-canvas"
       aria-hidden="true"
     >
-      <img
-        ref={logoRef}
-        src={theme === 'dark' ? '/logo-dark.svg' : '/logo.svg'}
-        alt=""
-        className="h-10 w-auto opacity-0"
-      />
-      <div ref={barRef} className="h-px w-24 origin-left scale-x-0 bg-signal" />
-      <div className="flex items-center gap-2">
-        <span className="live-loop h-1.5 w-1.5 rounded-full bg-signal shadow-[0_0_10px_1px_var(--color-signal)]" />
-        <span className="font-mono text-[0.6875rem] tracking-[0.14em] text-text-dim uppercase tabular-nums">
-          {STATUS_STEPS[statusIndex]}
-        </span>
+      <div className="relative flex h-20 w-20 items-center justify-center">
+        <div ref={ring1Ref} className="absolute inset-0 rounded-full border border-signal" />
+        <div ref={ring2Ref} className="absolute inset-0 rounded-full border border-signal" />
+        <div className="relative inline-block overflow-hidden">
+          <img
+            ref={logoRef}
+            src={theme === 'dark' ? '/logo-dark.svg' : '/logo.svg'}
+            alt=""
+            className="h-10 w-auto opacity-0"
+          />
+          <div
+            ref={sweepRef}
+            className="pointer-events-none absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-signal/70 to-transparent opacity-0"
+          />
+        </div>
       </div>
     </div>
   )
