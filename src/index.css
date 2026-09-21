@@ -256,6 +256,74 @@
   .rainbow-cta::after {
     animation-play-state: paused !important;
   }
+  .celebrate-cell {
+    animation: none !important;
+  }
+}
+
+/* Zip: each cell along the finished path lights up in sequence, staggered by animation-delay,
+   as if the completed route is being traveled end to end. */
+@keyframes zip-travel {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  45% {
+    transform: scale(1.22);
+    filter: brightness(1.7);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+/* Queens: the final crown (and, staggered, every other placed crown) pops as if the
+   constraints have just clicked into place. */
+@keyframes queens-settle {
+  0% {
+    transform: scale(0.6) rotate(-10deg);
+    opacity: 0.5;
+  }
+  55% {
+    transform: scale(1.25) rotate(4deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+/* Tango: a gentle diagonal wave settles across the balanced board. */
+@keyframes tango-settle {
+  0% {
+    transform: translateY(-8px) scale(0.8);
+    opacity: 0.4;
+  }
+  60% {
+    transform: translateY(3px) scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+/* Patches: each finished region locks into place with a brief outward pulse, in solve order. */
+@keyframes patches-lock {
+  0% {
+    transform: scale(0.94);
+  }
+  50% {
+    transform: scale(1.035);
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.4);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: inset 0 0 0 0 rgba(255, 255, 255, 0);
+  }
 }
 
 @keyframes reaction-pulse {

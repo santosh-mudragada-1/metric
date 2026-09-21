@@ -19,6 +19,9 @@ export interface QueensPuzzle {
   /** Region (color) index per cell. */
   regionOf: number[]
   palette: string[]
+  /** solution[row] = column of that row's queen in the generated solution — kept only so the
+   *  in-game hint can reveal one correct placement without re-solving the board. */
+  solution: number[]
 }
 
 function orthogonalNeighbors(size: number, idx: number): number[] {
@@ -97,7 +100,7 @@ export function generateQueens(rng: Rng): QueensPuzzle {
   const size = QUEENS_SIZE
   const queenCols = placeQueens(rng, size)
   const regionOf = growRegions(rng, size, queenCols)
-  return { size, regionOf, palette: QUEENS_PALETTE.slice(0, size) }
+  return { size, regionOf, palette: QUEENS_PALETTE.slice(0, size), solution: queenCols }
 }
 
 /** 0 = empty, 1 = marked (X), 2 = crown */

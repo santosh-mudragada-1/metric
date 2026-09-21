@@ -7,6 +7,9 @@ export interface ZipPuzzle {
   size: number
   /** checkpoints[cellIndex] = 1-based number, or 0 if the cell carries no number. */
   checkpoints: number[]
+  /** The Hamiltonian route used to place the checkpoints — a valid full solution, kept around
+   *  only so the in-game hint can reveal "the next cell" without re-deriving one. */
+  solutionPath: number[]
 }
 
 function neighbors(size: number, idx: number): number[] {
@@ -74,5 +77,5 @@ export function generateZip(rng: Rng): ZipPuzzle {
     checkpoints[path[pos]] = i + 1
   }
 
-  return { size, checkpoints }
+  return { size, checkpoints, solutionPath: path }
 }

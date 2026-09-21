@@ -15,6 +15,9 @@ export interface TangoPuzzle {
   /** Keyed by the index of the left/top cell of the pair. */
   hConstraints: Record<number, TangoRelation>
   vConstraints: Record<number, TangoRelation>
+  /** The fully solved grid used to derive the givens — kept only so the in-game hint can
+   *  reveal one correct cell without re-solving the board. */
+  solution: TangoSymbol[]
 }
 
 function idx(size: number, r: number, c: number): number {
@@ -176,7 +179,7 @@ export function generateTango(rng: Rng): TangoPuzzle {
     else vConstraints[pair.a] = relation
   }
 
-  return { size, givens, hConstraints, vConstraints }
+  return { size, givens, hConstraints, vConstraints, solution }
 }
 
 export function isTangoSolved(grid: TangoSymbol[], puzzle: TangoPuzzle): boolean {

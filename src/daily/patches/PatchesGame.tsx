@@ -1,8 +1,12 @@
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { generatePatches, isPatchesSolved, PATCHES_PALETTE, type Rect } from '@/daily/patches/generatePatches'
 import { useDailyPuzzle } from '@/daily/shared/useDailyPuzzle'
+import { useHistory } from '@/daily/shared/useHistory'
+import { useCelebration } from '@/daily/shared/useCelebration'
 import { DailyGameCard } from '@/daily/shared/DailyGameCard'
+import { PuzzleHelp } from '@/daily/shared/PuzzleHelp'
 import { Button } from '@/components/ui/Button'
+import { ArrowUturnLeftIcon, CheckIcon, SparklesIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { playClick } from '@/lib/sound/sfx'
 
 interface PatchesState {
@@ -34,12 +38,56 @@ function cellsOf(rect: Rect, width: number): number[] {
   return out
 }
 
+const STRONG_BORDER = '2px solid var(--color-ink)'
+const SEED_BORDER = '1px dashed var(--color-border)'
+
+function PatchesDiagram() {
+  return (
+    <div className="flex items-center justify-center gap-6 py-1">
+      <div className="flex flex-col items-center gap-1.5">
+        <div className="grid grid-cols-2 gap-0" style={{ width: '2.75rem' }}>
+          {[0, 1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="relative flex aspect-square items-center justify-center"
+              style={{ backgroundColor: '#5b8defcc', border: STRONG_BORDER, borderWidth: '1.5px' }}
+            >
+              {i === 0 && <span className="text-[0.6rem] font-bold text-white">4</span>}
+            </div>
+          ))}
+        </div>
+        <span className="flex items-center gap-1 text-xs font-semibold text-success">
+          <CheckIcon className="h-3 w-3 shrink-0" /> 4 cells, one seed
+        </span>
+      </div>
+      <div className="flex flex-col items-center gap-1.5">
+        <div className="grid grid-cols-2 gap-0" style={{ width: '2.75rem' }}>
+          <div
+            className="relative flex aspect-square items-center justify-center"
+            style={{ backgroundColor: '#5b8def33', border: '1.5px dashed #5b8def' }}
+          >
+            <span className="text-[0.6rem] font-bold text-text">4</span>
+          </div>
+          <div className="relative flex aspect-square items-center justify-center" style={{ border: SEED_BORDER }} />
+          <div className="relative flex aspect-square items-center justify-center" style={{ border: SEED_BORDER }} />
+          <div className="relative flex aspect-square items-center justify-center" style={{ border: SEED_BORDER }} />
+        </div>
+        <span className="flex items-center gap-1 text-xs font-semibold text-danger">
+          <XMarkIcon className="h-3 w-3 shrink-0" /> not grown yet
+        </span>
+      </div>
+    </div>
+  )
+}
+
 export function PatchesGame() {
   const { puzzle, state, setState, progress, completedToday, complete } = useDailyPuzzle<
     ReturnType<typeof generatePatches>,
     PatchesState
   >('patches', generatePatches, () => ({ rects: [] }))
-  const { width, height, clues } = puzzle
+  const { pushAndSet, undo, canUndo } = useHistory(state, setState)
+  const { celebrating, trigger } = useCelebration(complete)
+  const { width, height, clues, solution } = puzzle
   const rects = state.rects
 
   const [dragStart, setDragStart] = useState<Point | null>(null)
@@ -66,6 +114,7 @@ export function PatchesGame() {
     cellsOf(rect, width).some((i) => coveredBy.has(i) && coveredBy.get(i) !== excludeIdx)
 
   const beginDrag = (x: number, y: number) => {
+    if (celebrating) return
     setDragStart({ x, y })
     setDragCurrent({ x, y })
   }
@@ -88,7 +137,7 @@ export function PatchesGame() {
       if (existingRectIdx !== undefined) {
         playClick()
         const next = rects.filter((_, i) => i !== existingRectIdx)
-        setState({ rects: next })
+        pushAndSet({ rects: next })
         return
       }
     }
@@ -96,7 +145,7 @@ export function PatchesGame() {
     const matchIdx = rects.findIndex((r) => rectsEqual(r, candidate))
     if (matchIdx !== -1) {
       playClick()
-      setState({ rects: rects.filter((_, i) => i !== matchIdx) })
+      pushAndSet({ rects: rects.filter((_, i) => i !== matchIdx) })
       return
     }
 
@@ -108,16 +157,22 @@ export function PatchesGame() {
 
     playClick()
     const next = [...rects, candidate]
-    setState({ rects: next })
-    if (isPatchesSolved(next, puzzle)) complete()
+    pushAndSet({ rects: next })
+    if (isPatchesSolved(next, puzzle)) trigger(next.length * 60 + 320)
   }
 
-  const clear = () => {
+  const hint = () => {
+    if (celebrating) return
+    const missing = solution.find((r) => !rects.some((pr) => rectsEqual(pr, r)) && !overlaps(r))
+    if (!missing) return
     playClick()
-    setState({ rects: [] })
+    const next = [...rects, missing]
+    pushAndSet({ rects: next })
+    if (isPatchesSolved(next, puzzle)) trigger(next.length * 60 + 320)
   }
 
   const dragRect = dragStart && dragCurrent ? boundsOf(dragStart, dragCurrent) : null
+  const largestClue = clues.reduce((max, c) => (c.value > max.value ? c : max), clues[0])
 
   return (
     <DailyGameCard
@@ -142,12 +197,33 @@ export function PatchesGame() {
             const inDrag =
               dragRect && x >= dragRect.x && x < dragRect.x + dragRect.w && y >= dragRect.y && y < dragRect.y + dragRect.h
 
+            const neighborSameRect = (dx: number, dy: number) => {
+              const nx = x + dx
+              const ny = y + dy
+              if (nx < 0 || nx >= width || ny < 0 || ny >= height) return false
+              return coveredBy.get(ny * width + nx) === rectIdx
+            }
+
+            const borderStyle: CSSProperties =
+              rectIdx !== undefined
+                ? {
+                    borderTop: neighborSameRect(0, -1) ? 'none' : STRONG_BORDER,
+                    borderBottom: neighborSameRect(0, 1) ? 'none' : STRONG_BORDER,
+                    borderLeft: neighborSameRect(-1, 0) ? 'none' : STRONG_BORDER,
+                    borderRight: neighborSameRect(1, 0) ? 'none' : STRONG_BORDER,
+                  }
+                : { border: SEED_BORDER }
+
+            const lockStyle: CSSProperties =
+              celebrating && rectIdx !== undefined ? { animation: 'patches-lock 340ms ease-out both', animationDelay: `${rectIdx * 60}ms` } : {}
+
             return (
               <div
                 key={idx}
                 onPointerDown={() => beginDrag(x, y)}
                 onPointerEnter={() => updateDrag(x, y)}
-                className="relative flex aspect-square cursor-pointer items-center justify-center border border-dashed border-border/70"
+                className="celebrate-cell relative flex aspect-square cursor-pointer items-center justify-center"
+                style={{ ...borderStyle, ...lockStyle }}
               >
                 {info && (
                   <div className="absolute inset-0" style={{ backgroundColor: `${info.color}${info.isComplete ? 'cc' : '80'}` }} />
@@ -166,18 +242,36 @@ export function PatchesGame() {
           })}
         </div>
 
-        <Button variant="ghost" onClick={clear}>
-          Clear all
-        </Button>
-
-        <div className="w-full max-w-md rounded-2xl border border-border-strong bg-surface-raised p-4 text-left">
-          <p className="mb-2 font-display text-sm font-semibold text-text">How to play</p>
-          <ul className="list-disc space-y-1 pl-4 text-sm text-text-muted">
-            <li>Each colored seed must grow into a rectangle worth exactly its number of cells.</li>
-            <li>Drag to size a rectangle around a seed — every rectangle holds exactly one seed.</li>
-            <li>Cover every cell on the board to solve it.</li>
-          </ul>
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" disabled={!canUndo || celebrating} onClick={undo}>
+            <ArrowUturnLeftIcon className="h-4 w-4 shrink-0" />
+            Undo
+          </Button>
+          <Button variant="ghost" disabled={celebrating} onClick={hint}>
+            <SparklesIcon className="h-4 w-4 shrink-0" />
+            Hint
+          </Button>
         </div>
+
+        <PuzzleHelp
+          tip={
+            largestClue ? (
+              <>
+                Start with the <strong className="text-text">{largestClue.value}</strong>-cell seed — bigger numbers have
+                fewer possible rectangle shapes, so they're the fastest to pin down first.
+              </>
+            ) : (
+              'Start with the largest numbered seed — it has fewer possible shapes.'
+            )
+          }
+          diagram={<PatchesDiagram />}
+          rules={
+            <>
+              Each colored seed must grow into a rectangle worth exactly its number of cells. Drag to size a rectangle around
+              a seed — every rectangle holds exactly one seed, and together they must cover the whole board.
+            </>
+          }
+        />
       </div>
     </DailyGameCard>
   )

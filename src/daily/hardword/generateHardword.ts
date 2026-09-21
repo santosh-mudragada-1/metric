@@ -1,5 +1,5 @@
 import type { Rng } from '@/lib/dailySeed'
-import { WORD_LIST } from '@/daily/hardword/wordList'
+import { ANSWER_WORDS, VALID_WORDS } from '@/daily/hardword/wordList'
 
 export const HARDWORD_MAX_GUESSES = 8
 export const HARDWORD_LENGTH = 4
@@ -11,7 +11,7 @@ export interface HardwordPuzzle {
 }
 
 export function generateHardword(rng: Rng): HardwordPuzzle {
-  const answer = WORD_LIST[Math.floor(rng() * WORD_LIST.length)]
+  const answer = ANSWER_WORDS[Math.floor(rng() * ANSWER_WORDS.length)]
   return { answer, maxGuesses: HARDWORD_MAX_GUESSES, length: HARDWORD_LENGTH }
 }
 
@@ -40,5 +40,5 @@ export function evaluateGuess(guess: string, answer: string): LetterState[] {
 }
 
 export function isValidWord(word: string): boolean {
-  return WORD_LIST.includes(word.toLowerCase())
+  return VALID_WORDS.has(word.toLowerCase())
 }

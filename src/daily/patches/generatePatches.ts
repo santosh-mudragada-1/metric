@@ -36,6 +36,9 @@ export interface PatchesPuzzle {
   width: number
   height: number
   clues: PatchesClue[]
+  /** The generated rectangle solution — kept only so the in-game hint can reveal one correct
+   *  rectangle without re-solving the board. */
+  solution: Rect[]
 }
 
 function subdivide(rng: Rng, rect: Rect, out: Rect[]): void {
@@ -80,7 +83,7 @@ export function generatePatches(rng: Rng): PatchesPuzzle {
     return { idx: cy * width + cx, value: rect.w * rect.h, color: colors[i % colors.length] }
   })
 
-  return { width, height, clues }
+  return { width, height, clues, solution: pieces }
 }
 
 export function isPatchesSolved(rects: Rect[], puzzle: PatchesPuzzle): boolean {
