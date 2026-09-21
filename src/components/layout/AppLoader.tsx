@@ -6,18 +6,9 @@ interface AppLoaderProps {
   onDone: () => void
 }
 
-// One column per game accent — same eight colors the dashboard's game rows use,
-// so the panels that sweep the splash away read as "this app," not stock chrome.
-const ACCENTS = [
-  'var(--color-accent-reaction)',
-  'var(--color-accent-aim)',
-  'var(--color-accent-sequence)',
-  'var(--color-accent-number)',
-  'var(--color-accent-chimp)',
-  'var(--color-accent-visual)',
-  'var(--color-accent-verbal)',
-  'var(--color-accent-typing)',
-]
+// An eight-step grey ramp (dark to light) — matches the app's ink/chalk-only
+// system chrome instead of borrowing the colorful per-game accent palette.
+const ACCENTS = ['#141414', '#363636', '#575757', '#787878', '#999999', '#bababa', '#dbdbdb', '#f2f2f2']
 
 export function AppLoader({ onDone }: AppLoaderProps) {
   const rootRef = useRef<HTMLDivElement>(null)
