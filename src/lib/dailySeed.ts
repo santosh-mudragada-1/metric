@@ -35,9 +35,9 @@ export function yesterdayKey(date = new Date()): string {
   return todayKey(prev)
 }
 
-/** Day-count since an epoch, for a "Puzzle #123" style label. */
+/** Day-count since launch day, for a "Daily · day 123" style label. */
 export function puzzleNumber(date = new Date()): number {
-  const epoch = Date.UTC(2026, 0, 1)
+  const epoch = Date.UTC(2026, 8, 22)
   const utcToday = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
   return Math.max(1, Math.floor((utcToday - epoch) / 86_400_000) + 1)
 }

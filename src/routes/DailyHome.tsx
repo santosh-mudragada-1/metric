@@ -27,7 +27,7 @@ export default function DailyHome() {
     <div className="flex flex-col pt-10 sm:pt-16">
       <section className="flex flex-col gap-8 sm:gap-10">
         <span className="font-mono text-xs font-medium tracking-[0.18em] text-text-dim uppercase sm:text-sm">
-          Daily · puzzle #{puzzleNumber()}
+          Daily · day {puzzleNumber()}
         </span>
 
         <AnimatedHeading
