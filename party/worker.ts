@@ -1,6 +1,7 @@
 import { GameRoom } from './gameRoom'
+import type { PostHogEnv } from './posthog'
 
-export interface Env {
+export interface Env extends PostHogEnv {
   GAME_ROOM: DurableObjectNamespace
 }
 

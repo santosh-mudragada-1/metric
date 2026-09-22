@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { usePostHog } from '@posthog/react'
 import { CHIMP_TEST, generateChimpLevel } from '@shared/gameConfig'
 import { useLocalBest } from '@/hooks/useLocalBest'
 import { useRemoteScore } from '@/hooks/useRemoteScore'
@@ -16,13 +17,15 @@ export function useChimpTestSolo() {
   const [levelReached, setLevelReached] = useState(0)
   const { best, record } = useLocalBest('chimp-test')
   const { logResult } = useRemoteScore('chimp-test')
+  const posthog = usePostHog()
   const recordedRef = useRef(false)
 
   const start = useCallback(() => {
     setLevelReached(0)
     recordedRef.current = false
     setPhase('countdown')
-  }, [])
+    posthog?.capture('game_started', { game: 'chimp-test', mode: 'practice' })
+  }, [posthog])
 
   const onCountdownDone = useCallback(() => {
     setPositions(generateChimpLevel(CHIMP_TEST.startTiles))

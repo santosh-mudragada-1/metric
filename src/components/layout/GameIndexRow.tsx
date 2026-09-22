@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router'
+import { usePostHog } from '@posthog/react'
 import { ArrowUpRightIcon } from '@heroicons/react/24/outline'
 import { playClick } from '@/lib/sound/sfx'
 import { useLocalBest } from '@/hooks/useLocalBest'
@@ -44,11 +45,16 @@ function formatBest(game: GameConfig, best: Bests[keyof Bests]): string | null {
 
 export function GameIndexRow({ game, index }: { game: GameConfig; index: number }) {
   const navigate = useNavigate()
+  const posthog = usePostHog()
   const { best } = useLocalBest(game.id)
   const bestLabel = formatBest(game, best)
   const Preview = game.Preview
 
   const go = () => {
+    posthog?.capture('game_selected', {
+      game_id: game.id,
+      selection_source: 'dashboard_list',
+    })
     playClick()
     withViewTransition(() => navigate(`/play/${game.id}`))
   }

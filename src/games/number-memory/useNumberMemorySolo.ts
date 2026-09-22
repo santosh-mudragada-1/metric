@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { usePostHog } from '@posthog/react'
 import { NUMBER_MEMORY, generateNumber, numberDisplayMs } from '@shared/gameConfig'
 import { useLocalBest } from '@/hooks/useLocalBest'
 import { useRemoteScore } from '@/hooks/useRemoteScore'
@@ -14,6 +15,7 @@ export function useNumberMemorySolo() {
   const [wasCorrect, setWasCorrect] = useState(false)
   const { best, record } = useLocalBest('number-memory')
   const { logResult } = useRemoteScore('number-memory')
+  const posthog = usePostHog()
   const recordedRef = useRef(false)
 
   const setInput = useCallback((value: string) => {
@@ -31,7 +33,8 @@ export function useNumberMemorySolo() {
     setDigitsReached(0)
     recordedRef.current = false
     setPhase('countdown')
-  }, [])
+    posthog?.capture('game_started', { game: 'number-memory', mode: 'practice' })
+  }, [posthog])
 
   const onCountdownDone = useCallback(() => beginRound(NUMBER_MEMORY.startDigits), [beginRound])
 

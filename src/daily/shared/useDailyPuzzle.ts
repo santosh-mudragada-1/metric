@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { usePostHog } from '@posthog/react'
 import { createDailyRng, todayKey, yesterdayKey } from '@/lib/dailySeed'
 import {
   getDailyProgress,
@@ -22,6 +23,7 @@ export function useDailyPuzzle<Puzzle, State>(
   generate: (rng: () => number) => Puzzle,
   initialState: (puzzle: Puzzle) => State,
 ) {
+  const posthog = usePostHog()
   const dateKey = useMemo(() => todayKey(), [])
 
   const puzzle = useMemo(() => generate(createDailyRng(gameId)), [gameId, dateKey]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -31,6 +33,15 @@ export function useDailyPuzzle<Puzzle, State>(
   const [justCompleted, setJustCompleted] = useState(false)
 
   const completedToday = progress.lastCompletedDate === dateKey
+
+  const startedRef = useRef(false)
+  useEffect(() => {
+    if (startedRef.current || completedToday) return
+    startedRef.current = true
+    posthog?.capture('daily_puzzle_started', { game_id: gameId })
+    posthog?.capture('game_started', { game: gameId, mode: 'daily' })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const setState = (updater: State | ((prev: State) => State)) => {
     setStateRaw((prev) => {
@@ -46,8 +57,32 @@ export function useDailyPuzzle<Puzzle, State>(
     // (memoized) read of this same data mounts — rather than in an effect downstream, which
     // would run one render too late and see a stale, not-yet-written value.
     const startedAt = getDailyTimerStart(gameId, dateKey)
-    if (startedAt !== null) recordDailyTime(gameId, dateKey, Date.now() - startedAt)
+    const durationMs = startedAt !== null ? Date.now() - startedAt : null
+    if (durationMs !== null) recordDailyTime(gameId, dateKey, durationMs)
+    const prevStreak = progress.streak
     const next = recordDailyCompletion(gameId, dateKey, yesterdayKey())
+    const completionTime = durationMs !== null ? Math.round(durationMs / 1000) : undefined
+
+    posthog?.capture('daily_puzzle_completed', {
+      game_id: gameId,
+      duration_ms: durationMs,
+      streak: next.streak,
+    })
+    posthog?.capture('game_completed', {
+      game: gameId,
+      mode: 'daily',
+      completion_time: completionTime,
+      streak: next.streak,
+    })
+
+    if (prevStreak === 0) {
+      posthog?.capture('streak_started', { game: gameId, mode: 'daily', streak: next.streak })
+    } else if (next.streak === 1) {
+      posthog?.capture('streak_broken', { game: gameId, mode: 'daily', previous_streak: prevStreak })
+    } else {
+      posthog?.capture('streak_extended', { game: gameId, mode: 'daily', streak: next.streak })
+    }
+
     setProgress(next)
     setJustCompleted(true)
     playSuccess()

@@ -1,4 +1,5 @@
 import { createContext, useEffect, useState, type ReactNode } from 'react'
+import { usePostHog } from '@posthog/react'
 import type { User } from '@supabase/supabase-js'
 import { isSupabaseConfigured, supabase } from '@/lib/supabase'
 import { migrateLocalBestsIfNeeded } from '@/lib/statsMigration'
@@ -49,20 +50,52 @@ function isPasskeyCancelled(error: unknown): boolean {
 const NOT_CONFIGURED: AuthResult = { error: "Sign-in isn't configured yet — add Supabase credentials to enable this." }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const posthog = usePostHog()
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(isSupabaseConfigured)
 
   useEffect(() => {
     if (!supabase) return
     supabase.auth.getSession().then(({ data }) => {
-      setUser(data.session?.user ?? null)
+      const sessionUser = data.session?.user ?? null
+      setUser(sessionUser)
+      if (sessionUser) {
+        posthog?.identify(sessionUser.id, {
+          email: sessionUser.email,
+          auth_provider: sessionUser.app_metadata.provider,
+        })
+      }
       setLoading(false)
     })
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
+    const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
+      const sessionUser = session?.user ?? null
+      setUser(sessionUser)
+      if (sessionUser) {
+        posthog?.identify(sessionUser.id, {
+          email: sessionUser.email,
+          auth_provider: sessionUser.app_metadata.provider,
+        })
+        if (event === 'SIGNED_IN') {
+          posthog?.capture('user_signed_in', {
+            auth_provider: sessionUser.app_metadata.provider ?? 'unknown',
+          })
+          // A brand-new account's first sign-in lands within seconds of its creation timestamp —
+          // a returning user's `last_sign_in_at` is always far later than `created_at`.
+          const createdAt = new Date(sessionUser.created_at).getTime()
+          const lastSignInAt = sessionUser.last_sign_in_at ? new Date(sessionUser.last_sign_in_at).getTime() : createdAt
+          if (lastSignInAt - createdAt < 10_000) {
+            posthog?.capture('signup_completed', {
+              auth_provider: sessionUser.app_metadata.provider ?? 'unknown',
+            })
+          }
+        }
+      } else if (event === 'SIGNED_OUT') {
+        posthog?.capture('user_signed_out')
+        posthog?.reset()
+      }
     })
     return () => subscription.subscription.unsubscribe()
-  }, [])
+  }, [posthog])
 
   // Backfill any pre-sign-in guest bests so the stats page reflects what the home page already shows.
   useEffect(() => {

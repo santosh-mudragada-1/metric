@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { usePostHog } from '@posthog/react'
 import { SEQUENCE_MEMORY, extendSequence, generateSequence } from '@shared/gameConfig'
 import { useLocalBest } from '@/hooks/useLocalBest'
 import { useRemoteScore } from '@/hooks/useRemoteScore'
@@ -14,13 +15,15 @@ export function useSequenceMemorySolo() {
   const [levelReached, setLevelReached] = useState(0)
   const { best, record } = useLocalBest('sequence-memory')
   const { logResult } = useRemoteScore('sequence-memory')
+  const posthog = usePostHog()
   const recordedRef = useRef(false)
 
   const start = useCallback(() => {
     setLevelReached(0)
     recordedRef.current = false
     setPhase('countdown')
-  }, [])
+    posthog?.capture('game_started', { game: 'sequence-memory', mode: 'practice' })
+  }, [posthog])
 
   const onCountdownDone = useCallback(() => {
     setSequence(generateSequence(SEQUENCE_MEMORY.startLength))

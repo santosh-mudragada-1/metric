@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { usePostHog } from '@posthog/react'
 import { VERBAL_MEMORY, generateVerbalMemoryWords, wasWordSeenBefore } from '@shared/gameConfig'
 import { useLocalBest } from '@/hooks/useLocalBest'
 import { useRemoteScore } from '@/hooks/useRemoteScore'
@@ -17,6 +18,7 @@ export function useVerbalMemorySolo() {
   const [feedback, setFeedback] = useState<VerbalFeedback>(null)
   const { best, record } = useLocalBest('verbal-memory')
   const { logResult } = useRemoteScore('verbal-memory')
+  const posthog = usePostHog()
   const recordedRef = useRef(false)
 
   const start = useCallback(() => {
@@ -27,7 +29,8 @@ export function useVerbalMemorySolo() {
     setFeedback(null)
     recordedRef.current = false
     setPhase('countdown')
-  }, [])
+    posthog?.capture('game_started', { game: 'verbal-memory', mode: 'practice' })
+  }, [posthog])
 
   const onCountdownDone = useCallback(() => setPhase('playing'), [])
 

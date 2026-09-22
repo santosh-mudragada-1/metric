@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { usePostHog } from '@posthog/react'
 import { REACTION_TIME, generateReactionDelay } from '@shared/gameConfig'
 import { useLocalBest } from '@/hooks/useLocalBest'
 import { useRemoteScore } from '@/hooks/useRemoteScore'
@@ -17,6 +18,7 @@ export function useReactionTimeSolo() {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const { best, record } = useLocalBest('reaction-time')
   const { logResult } = useRemoteScore('reaction-time')
+  const posthog = usePostHog()
   const recordedRef = useRef(false)
 
   const clearTimer = useCallback(() => {
@@ -40,7 +42,8 @@ export function useReactionTimeSolo() {
     setRound(1)
     recordedRef.current = false
     setPhase('countdown')
-  }, [])
+    posthog?.capture('game_started', { game: 'reaction-time', mode: 'practice' })
+  }, [posthog])
 
   const onCountdownDone = useCallback(() => armRound(), [armRound])
 
@@ -83,7 +86,7 @@ export function useReactionTimeSolo() {
   useEffect(() => {
     if (!result || recordedRef.current) return
     recordedRef.current = true
-    logResult(result.averageMs)
+    logResult(result.averageMs, { attempts: result.attempts.length })
     if (!best || result.averageMs < best.bestMs) {
       record({ bestMs: result.averageMs, lastPlayedAt: new Date().toISOString() })
     }

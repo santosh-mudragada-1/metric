@@ -1,4 +1,5 @@
 import { useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
+import { usePostHog } from '@posthog/react'
 import { generatePatches, isPatchesSolved, PATCHES_PALETTE, type PatchesShape, type Rect } from '@/daily/patches/generatePatches'
 import { useDailyPuzzle } from '@/daily/shared/useDailyPuzzle'
 import { useHistory } from '@/daily/shared/useHistory'
@@ -173,7 +174,8 @@ export function PatchesGame() {
     ReturnType<typeof generatePatches>,
     PatchesState
   >('patches', generatePatches, () => ({ rects: [] }))
-  const { pushAndSet, undo, canUndo } = useHistory(state, setState)
+  const posthog = usePostHog()
+  const { pushAndSet, undo, canUndo } = useHistory('patches', state, setState)
   const { celebrating, celebratingRef, trigger } = useCelebration(complete)
   const { width, height, clues, solution } = puzzle
   const rects = state.rects
@@ -303,12 +305,14 @@ export function PatchesGame() {
     playClick()
     const next = [...rects, missing]
     pushAndSet({ rects: next })
+    posthog?.capture('hint_used', { game: 'patches', mode: 'daily' })
     if (isPatchesSolved(next, puzzle)) trigger(next.length * 60 + 320)
   }
 
   const clear = () => {
     playClick()
     pushAndSet({ rects: [] })
+    posthog?.capture('clear_used', { game: 'patches', mode: 'daily' })
   }
 
   const dragRect = dragStart && dragCurrent ? boundsOf(dragStart, dragCurrent) : null

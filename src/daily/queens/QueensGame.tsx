@@ -1,3 +1,4 @@
+import { usePostHog } from '@posthog/react'
 import { generateQueens, isQueensSolved, type QueensCell } from '@/daily/queens/generateQueens'
 import { useDailyPuzzle } from '@/daily/shared/useDailyPuzzle'
 import { useHistory } from '@/daily/shared/useHistory'
@@ -72,7 +73,8 @@ export function QueensGame() {
     ReturnType<typeof generateQueens>,
     QueensState
   >('queens', generateQueens, (p) => ({ grid: new Array(p.size * p.size).fill(0) as QueensCell[] }))
-  const { pushAndSet, undo, canUndo } = useHistory(state, setState)
+  const posthog = usePostHog()
+  const { pushAndSet, undo, canUndo } = useHistory('queens', state, setState)
   const { celebrating, trigger } = useCelebration(complete)
   const { size, regionOf, palette, solution } = puzzle
   const grid = state.grid
@@ -98,12 +100,14 @@ export function QueensGame() {
     const next = grid.slice()
     next[idx] = 2
     pushAndSet({ grid: next })
+    posthog?.capture('hint_used', { game: 'queens', mode: 'daily' })
     if (isQueensSolved(next, puzzle)) trigger(size * 90 + 420)
   }
 
   const clear = () => {
     playClick()
     pushAndSet({ grid: new Array(size * size).fill(0) as QueensCell[] })
+    posthog?.capture('clear_used', { game: 'queens', mode: 'daily' })
   }
 
   return (

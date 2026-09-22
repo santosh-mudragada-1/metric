@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { usePostHog } from '@posthog/react'
 import { generateTypingPassage } from '@shared/gameConfig'
 import { useLocalBest } from '@/hooks/useLocalBest'
 import { useRemoteScore } from '@/hooks/useRemoteScore'
@@ -24,15 +25,18 @@ export function useTypingSolo() {
   const [accuracy, setAccuracy] = useState(100)
   const { best, record } = useLocalBest('typing')
   const { logResult } = useRemoteScore('typing')
+  const posthog = usePostHog()
   const recordedRef = useRef(false)
   const startTimeRef = useRef(0)
+  const elapsedMsRef = useRef(0)
 
   const start = useCallback(() => {
     setText(generateTypingPassage())
     setTyped('')
     recordedRef.current = false
     setPhase('countdown')
-  }, [])
+    posthog?.capture('game_started', { game: 'typing', mode: 'practice' })
+  }, [posthog])
 
   const onCountdownDone = useCallback(() => {
     startTimeRef.current = Date.now()
@@ -43,6 +47,7 @@ export function useTypingSolo() {
   const finish = useCallback(
     (finalTyped: string) => {
       const elapsedMs = Date.now() - startTimeRef.current
+      elapsedMsRef.current = elapsedMs
       const stats = computeTypingStats(text, finalTyped, elapsedMs)
       setWpm(stats.wpm)
       setAccuracy(stats.accuracy)
@@ -64,7 +69,7 @@ export function useTypingSolo() {
   useEffect(() => {
     if (phase !== 'result' || recordedRef.current) return
     recordedRef.current = true
-    logResult(wpm)
+    logResult(wpm, { completion_time: Math.round(elapsedMsRef.current / 1000) })
     if (!best || wpm > best.bestWpm || (wpm === best.bestWpm && accuracy > best.bestAccuracy)) {
       record({ bestWpm: wpm, bestAccuracy: accuracy, lastPlayedAt: new Date().toISOString() })
     }

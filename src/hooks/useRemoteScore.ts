@@ -1,11 +1,20 @@
 import { useCallback } from 'react'
+import { usePostHog } from '@posthog/react'
 import type { GameId } from '@shared/types'
 import { supabase } from '@/lib/supabase'
 
 /** Logs one completed run to Supabase for the signed-in player, for the stats page's avg/best. */
 export function useRemoteScore(gameId: GameId) {
+  const posthog = usePostHog()
   const logResult = useCallback(
     async (metricValue: number, extra?: Record<string, number>) => {
+      posthog?.capture('game_completed', {
+        game_id: gameId,
+        game: gameId,
+        mode: 'practice',
+        metric_value: metricValue,
+        ...extra,
+      })
       if (!supabase) return
       // Re-checks the session directly instead of trusting a `user` value captured in a closure —
       // that value can still be null right after a page load (the initial `getSession()` call
@@ -29,7 +38,7 @@ export function useRemoteScore(gameId: GameId) {
       }
       if (error) console.error(`Failed to log ${gameId} result to Supabase:`, error)
     },
-    [gameId],
+    [gameId, posthog],
   )
 
   return { logResult }

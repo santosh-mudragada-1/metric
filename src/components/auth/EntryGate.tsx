@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { useGSAP } from '@gsap/react'
+import { usePostHog } from '@posthog/react'
 import gsap from 'gsap'
 import { Button } from '@/components/ui/Button'
 import { AuthModal } from './AuthModal'
@@ -15,6 +16,7 @@ interface EntryGateProps {
  * relying on whatever the player happens to click first inside a game.
  */
 export function EntryGate({ onResolved }: EntryGateProps) {
+  const posthog = usePostHog()
   const [authOpen, setAuthOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
@@ -56,7 +58,10 @@ export function EntryGate({ onResolved }: EntryGateProps) {
             </Button>
             <button
               type="button"
-              onClick={finish}
+              onClick={() => {
+                posthog?.capture('guest_mode_selected')
+                finish()
+              }}
               className="cursor-pointer py-2 font-mono text-[0.6875rem] tracking-[0.14em] text-text-dim uppercase
                 hover:text-text-muted"
             >

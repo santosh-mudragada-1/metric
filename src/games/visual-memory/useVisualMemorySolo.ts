@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { usePostHog } from '@posthog/react'
 import { VISUAL_MEMORY, generateVisualMemoryLevel } from '@shared/gameConfig'
 import { useLocalBest } from '@/hooks/useLocalBest'
 import { useRemoteScore } from '@/hooks/useRemoteScore'
@@ -16,13 +17,15 @@ export function useVisualMemorySolo() {
   const [levelReached, setLevelReached] = useState(0)
   const { best, record } = useLocalBest('visual-memory')
   const { logResult } = useRemoteScore('visual-memory')
+  const posthog = usePostHog()
   const recordedRef = useRef(false)
 
   const start = useCallback(() => {
     setLevelReached(0)
     recordedRef.current = false
     setPhase('countdown')
-  }, [])
+    posthog?.capture('game_started', { game: 'visual-memory', mode: 'practice' })
+  }, [posthog])
 
   const onCountdownDone = useCallback(() => {
     setTargetTiles(generateVisualMemoryLevel(VISUAL_MEMORY.startTiles))

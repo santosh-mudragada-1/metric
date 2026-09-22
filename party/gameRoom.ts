@@ -9,9 +9,12 @@ import { generateRoundContent as chimpTestContent } from './games/chimpTest'
 import { generateRoundContent as visualMemoryContent } from './games/visualMemory'
 import { generateRoundContent as verbalMemoryContent } from './games/verbalMemory'
 import { generateRoundContent as typingContent } from './games/typing'
+import { createPostHog, type PostHogEnv } from './posthog'
 
 interface ConnAttachment {
   clientPlayerId: string
+  analyticsDistinctId?: string
+  analyticsSessionId?: string
 }
 
 const COUNTDOWN_MS = 3200
@@ -74,7 +77,7 @@ export class GameRoom implements DurableObject {
 
   constructor(
     private readonly ctx: DurableObjectState,
-    _env: unknown,
+    private readonly env: PostHogEnv,
   ) {
     this.state = initialState(ctx.id.name ?? ctx.id.toString())
     this.ready = ctx.blockConcurrencyWhile(async () => {
@@ -102,6 +105,32 @@ export class GameRoom implements DurableObject {
 
   private getPlayer(clientPlayerId: string): Player | undefined {
     return this.state.players.find((p) => p.id === clientPlayerId)
+  }
+
+  private hostAttachment(): ConnAttachment | null {
+    for (const socket of this.ctx.getWebSockets()) {
+      const attachment = this.attachmentOf(socket)
+      if (attachment && this.getPlayer(attachment.clientPlayerId)?.isHost) return attachment
+    }
+    return null
+  }
+
+  private async capture(
+    event: string,
+    attachment: ConnAttachment | null,
+    properties: Record<string, string | number | boolean | undefined>,
+  ): Promise<void> {
+    const posthog = createPostHog(this.env)
+    if (!posthog) return
+    posthog.capture({
+      distinctId: attachment?.analyticsDistinctId ?? attachment?.clientPlayerId ?? 'multiplayer_server',
+      event,
+      properties: {
+        ...properties,
+        $session_id: attachment?.analyticsSessionId,
+      },
+    })
+    await posthog.shutdown().catch(() => {})
   }
 
   private ensureHost(): void {
@@ -150,6 +179,14 @@ export class GameRoom implements DurableObject {
     this.state.phase = eliminationEnded || this.state.round >= this.state.maxRounds ? 'finished' : 'roundResult'
     await this.persist()
     this.broadcast()
+    if (this.state.phase === 'finished') {
+      await this.capture('multiplayer_game_finished', this.hostAttachment(), {
+        game_id: this.state.gameId,
+        rounds_played: this.state.round,
+        player_count: this.state.players.length,
+        elimination_mode: this.state.eliminationMode,
+      })
+    }
   }
 
   /** There's no round timer — a round only ends once every connected, non-eliminated player has submitted. */
@@ -194,7 +231,11 @@ export class GameRoom implements DurableObject {
 
     switch (message.type) {
       case 'join': {
-        ws.serializeAttachment({ clientPlayerId: message.clientPlayerId } satisfies ConnAttachment)
+        ws.serializeAttachment({
+          clientPlayerId: message.clientPlayerId,
+          analyticsDistinctId: message.analyticsDistinctId,
+          analyticsSessionId: message.analyticsSessionId,
+        } satisfies ConnAttachment)
         const existing = this.getPlayer(message.clientPlayerId)
         if (existing) {
           existing.connected = true
@@ -297,6 +338,14 @@ export class GameRoom implements DurableObject {
           this.state.players = this.state.players.map((p) => ({ ...p, eliminated: false }))
         }
         await this.startCountdown()
+        if (isFreshStart) {
+          await this.capture('multiplayer_game_started', this.attachmentOf(ws), {
+            game_id: this.state.gameId,
+            max_rounds: this.state.maxRounds,
+            player_count: this.state.players.length,
+            elimination_mode: this.state.eliminationMode,
+          })
+        }
         break
       }
 

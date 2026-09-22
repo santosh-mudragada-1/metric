@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router'
 import { TrophyIcon } from '@heroicons/react/24/solid'
 import { ArrowUpOnSquareIcon, CheckIcon } from '@heroicons/react/24/outline'
+import { usePostHog } from '@posthog/react'
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { formatDuration } from '@/daily/shared/formatDuration'
@@ -20,6 +21,7 @@ function pickUnplayedGame(currentId: DailyGameId) {
 
 export function DailyComplete({ gameId, progress }: { gameId: DailyGameId; progress: DailyProgress }) {
   const navigate = useNavigate()
+  const posthog = usePostHog()
   const game = DAILY_GAME_MAP[gameId]
   const classes = DAILY_ACCENT_CLASSES[game.accent]
   const [shareState, setShareState] = useState<'idle' | 'copied'>('idle')
@@ -45,6 +47,17 @@ export function DailyComplete({ gameId, progress }: { gameId: DailyGameId; progr
         // clipboard unavailable — nothing more to do
       }
     }
+    posthog?.capture('daily_result_shared', {
+      game_id: gameId,
+      share_method: shared ? 'native_share' : 'clipboard',
+      streak: progress.streak,
+    })
+    posthog?.capture('result_shared', {
+      game: gameId,
+      mode: 'daily',
+      share_method: shared ? 'native_share' : 'clipboard',
+      streak: progress.streak,
+    })
     playCopy()
     setShareState('copied')
     setTimeout(() => setShareState('idle'), 1800)

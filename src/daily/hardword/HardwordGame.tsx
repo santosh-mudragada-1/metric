@@ -1,6 +1,7 @@
 import { useEffect, useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router'
+import { usePostHog } from '@posthog/react'
 import { BackspaceIcon } from '@heroicons/react/24/outline'
 import { evaluateGuess, generateHardword, isValidWord, type LetterState } from '@/daily/hardword/generateHardword'
 import { useDailyPuzzle } from '@/daily/shared/useDailyPuzzle'
@@ -33,6 +34,7 @@ export function HardwordGame() {
     HardwordState
   >('hardword', generateHardword, () => ({ guesses: [] }))
   const navigate = useNavigate()
+  const posthog = usePostHog()
   const { answer, maxGuesses, length } = puzzle
   const guesses = state.guesses
 
@@ -77,7 +79,10 @@ export function HardwordGame() {
     setTimeout(() => {
       setRevealingRow(null)
       if (guessWord === answer) complete()
-      else if (next.length >= maxGuesses) playFail()
+      else if (next.length >= maxGuesses) {
+        playFail()
+        posthog?.capture('game_failed', { game: 'hardword', mode: 'daily', attempts: next.length })
+      }
     }, revealMs)
   }
 

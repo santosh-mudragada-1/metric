@@ -1,5 +1,6 @@
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { usePartySocket } from 'partysocket/react'
+import { usePostHog } from '@posthog/react'
 import type { ClientMessage, ServerMessage } from '@shared/protocol'
 import type { RoomState } from '@shared/types'
 import { PARTY_HOST } from '@/lib/partyHost'
@@ -10,6 +11,7 @@ import { PartyRoomContext } from './PartyRoomContext'
 const CONNECT_TIMEOUT_MS = 10_000
 
 export function PartyProvider({ roomCode, children }: { roomCode: string; children: ReactNode }) {
+  const posthog = usePostHog()
   const { profile } = useProfile()
   const [state, setState] = useState<RoomState | null>(null)
   const [connected, setConnected] = useState(false)
@@ -30,6 +32,8 @@ export function PartyProvider({ roomCode, children }: { roomCode: string; childr
           clientPlayerId: profileRef.current.clientPlayerId,
           name: profileRef.current.name || 'Player',
           device: detectDeviceType(),
+          analyticsDistinctId: posthog?.get_distinct_id(),
+          analyticsSessionId: posthog?.get_session_id(),
         } satisfies ClientMessage),
       )
     },
@@ -70,9 +74,16 @@ export function PartyProvider({ roomCode, children }: { roomCode: string; childr
 
   useEffect(() => {
     if (socket.readyState === WebSocket.OPEN && profile.name) {
-      send({ type: 'join', clientPlayerId: profile.clientPlayerId, name: profile.name, device: detectDeviceType() })
+      send({
+        type: 'join',
+        clientPlayerId: profile.clientPlayerId,
+        name: profile.name,
+        device: detectDeviceType(),
+        analyticsDistinctId: posthog?.get_distinct_id(),
+        analyticsSessionId: posthog?.get_session_id(),
+      })
     }
-  }, [profile.name, profile.clientPlayerId, socket, send])
+  }, [posthog, profile.name, profile.clientPlayerId, socket, send])
 
   return (
     <PartyRoomContext.Provider value={{ state, connected, error, send, nudge, nudgePlayers }}>

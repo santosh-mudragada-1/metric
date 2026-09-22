@@ -1,7 +1,14 @@
 import type { DeviceType, GameId, GameResult, RoomState } from './types'
 
 export type ClientMessage =
-  | { type: 'join'; clientPlayerId: string; name: string; device: DeviceType }
+  | {
+      type: 'join'
+      clientPlayerId: string
+      name: string
+      device: DeviceType
+      analyticsDistinctId?: string
+      analyticsSessionId?: string
+    }
   | { type: 'setReady'; ready: boolean }
   | { type: 'hostChangeGame'; gameId: GameId }
   | { type: 'hostSetRounds'; maxRounds: number }

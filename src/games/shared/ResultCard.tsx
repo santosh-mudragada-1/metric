@@ -1,5 +1,6 @@
 import { type ReactNode, useRef, useState } from 'react'
 import { useGSAP } from '@gsap/react'
+import { usePostHog } from '@posthog/react'
 import { useNavigate } from 'react-router'
 import { TrophyIcon } from '@heroicons/react/24/solid'
 import { ArrowUpOnSquareIcon, CheckIcon, UserIcon } from '@heroicons/react/24/outline'
@@ -50,6 +51,7 @@ export function ResultCard({
   playAgainLabel = 'Play Again',
 }: ResultCardProps) {
   const navigate = useNavigate()
+  const posthog = usePostHog()
   const { profile, updateName } = useProfile()
   const rootRef = useRef<HTMLDivElement>(null)
   const numberRefs = useRef<(HTMLSpanElement | null)[]>([])
@@ -103,6 +105,17 @@ export function ResultCard({
       }
     }
 
+    posthog?.capture('game_result_shared', {
+      game_id: gameId,
+      share_method: shared ? 'native_share' : 'clipboard',
+      is_new_best: Boolean(isNewBest),
+    })
+    posthog?.capture('result_shared', {
+      game: gameId,
+      mode: 'practice',
+      share_method: shared ? 'native_share' : 'clipboard',
+      is_new_best: Boolean(isNewBest),
+    })
     playCopy()
     flashSuccess(rootRef.current)
     setShareState('copied')

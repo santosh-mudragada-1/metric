@@ -1,5 +1,6 @@
 import { type ReactNode, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
+import { usePostHog } from '@posthog/react'
 import { ArrowRightCircleIcon, PlusIcon } from '@heroicons/react/24/outline'
 import { Button } from '@/components/ui/Button'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -78,6 +79,7 @@ function OptionCard({
 
 export default function MultiplayerLobby() {
   const navigate = useNavigate()
+  const posthog = usePostHog()
   const { profile, updateName } = useProfile()
   const [name, setName] = useState(profile.name)
   const [mode, setMode] = useState<LobbyMode>('choose')
@@ -105,6 +107,7 @@ export default function MultiplayerLobby() {
       nudgeForName()
       return
     }
+    posthog?.capture('multiplayer_room_created')
     playClick()
     const code = generateRoomCode()
     withViewTransition(() => navigate(`/party/${code}`))
@@ -116,6 +119,7 @@ export default function MultiplayerLobby() {
       if (!trimmed) nudgeForName()
       return
     }
+    posthog?.capture('multiplayer_room_joined')
     playClick()
     withViewTransition(() => navigate(`/party/${joinCode.trim().toUpperCase()}`))
   }

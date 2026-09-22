@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { usePostHog } from '@posthog/react'
 import { AIM_TRAINER, generateAimTargets } from '@shared/gameConfig'
 import { useLocalBest } from '@/hooks/useLocalBest'
 import { useRemoteScore } from '@/hooks/useRemoteScore'
@@ -26,6 +27,7 @@ export function useAimTrainerSolo() {
   const spawnTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const { best, record } = useLocalBest('aim-trainer')
   const { logResult } = useRemoteScore('aim-trainer')
+  const posthog = usePostHog()
   const recordedRef = useRef(false)
 
   const clearSpawnTimer = useCallback(() => {
@@ -49,7 +51,8 @@ export function useAimTrainerSolo() {
     setHitTimes([])
     recordedRef.current = false
     setPhase('countdown')
-  }, [])
+    posthog?.capture('game_started', { game: 'aim-trainer', mode: 'practice' })
+  }, [posthog])
 
   const onCountdownDone = useCallback(() => {
     setPhase('playing')

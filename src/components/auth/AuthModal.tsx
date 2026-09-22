@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { usePostHog } from '@posthog/react'
 import { KeyIcon } from '@heroicons/react/24/outline'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
@@ -13,6 +14,7 @@ interface AuthModalProps {
 
 export function AuthModal({ open, onClose }: AuthModalProps) {
   const { configured, signInWithGoogle, signInWithPasskey } = useAuth()
+  const posthog = usePostHog()
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -23,7 +25,8 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
   }
 
   /** Returns true on success. A cancelled passkey prompt resolves quietly — it isn't a real error. */
-  const run = async (fn: () => Promise<AuthResult>): Promise<boolean> => {
+  const run = async (fn: () => Promise<AuthResult>, method: 'passkey' | 'google'): Promise<boolean> => {
+    posthog?.capture('signup_started', { method })
     setBusy(true)
     setError(null)
     const result = await fn()
@@ -37,7 +40,7 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
   }
 
   const handlePasskey = async () => {
-    if (await run(signInWithPasskey)) close()
+    if (await run(signInWithPasskey, 'passkey')) close()
   }
 
   return (
@@ -57,7 +60,7 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
           variant="primary"
           size="lg"
           disabled={!configured || busy}
-          onClick={() => run(signInWithGoogle)}
+          onClick={() => run(signInWithGoogle, 'google')}
           className="w-full gap-3"
         >
           <GoogleIcon />

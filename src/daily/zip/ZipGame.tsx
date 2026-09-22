@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
+import { usePostHog } from '@posthog/react'
 import { generateZip, isWallBetween } from '@/daily/zip/generateZip'
 import { ZIP_GRADIENT_FROM, ZIP_GRADIENT_TO, ZIP_PATH_COLOR } from '@/daily/zip/pathColor'
 import { useDailyPuzzle } from '@/daily/shared/useDailyPuzzle'
@@ -50,7 +51,8 @@ export function ZipGame() {
     ReturnType<typeof generateZip>,
     ZipState
   >('zip', generateZip, () => ({ path: [] }))
-  const { pushAndSet, undo, canUndo } = useHistory(state, setState)
+  const posthog = usePostHog()
+  const { pushAndSet, undo, canUndo } = useHistory('zip', state, setState)
   const { celebrating, celebratingRef, trigger } = useCelebration(complete)
   const { size, checkpoints, solutionPath, walls } = puzzle
   const total = size * size
@@ -144,6 +146,7 @@ export function ZipGame() {
   const clear = () => {
     playClick()
     pushAndSet({ path: [] })
+    posthog?.capture('clear_used', { game: 'zip', mode: 'daily' })
   }
 
   const hint = () => {
@@ -151,6 +154,7 @@ export function ZipGame() {
     playClick()
     const next = solutionPath.slice(0, Math.min(path.length + 1, total))
     pushAndSet({ path: next })
+    posthog?.capture('hint_used', { game: 'zip', mode: 'daily' })
     if (next.length === total) trigger(celebrationDuration())
   }
 
