@@ -51,7 +51,7 @@ export function ZipGame() {
     ZipState
   >('zip', generateZip, () => ({ path: [] }))
   const { pushAndSet, undo, canUndo } = useHistory(state, setState)
-  const { celebrating, trigger } = useCelebration(complete)
+  const { celebrating, celebratingRef, trigger } = useCelebration(complete)
   const { size, checkpoints, solutionPath, walls } = puzzle
   const total = size * size
   const path = state.path
@@ -73,7 +73,10 @@ export function ZipGame() {
   const celebrationDuration = () => sweepDuration() + 380 + 120
 
   const extendTo = (idx: number): boolean => {
-    if (celebrating) return false
+    // Checked via the ref, not the `celebrating` state, so a pointermove that fires in the brief
+    // window before React commits `celebrating: true` (e.g. a fast drag overshooting the final
+    // cell by a pixel) can't slip through on a stale read and mutate the finished path.
+    if (celebratingRef.current) return false
     const existingIndex = path.indexOf(idx)
     if (existingIndex !== -1) {
       pushAndSet((prev) => ({ path: prev.path.slice(0, existingIndex + 1) }))
@@ -101,20 +104,22 @@ export function ZipGame() {
     rejectTimer.current = setTimeout(() => setRejectedIdx(null), 220)
   }
 
+  // Clamped rather than returning null once the pointer strays outside the board — a dragging
+  // finger near the edge routinely drifts a few pixels past the exact boundary.
   const cellFromEvent = (e: ReactPointerEvent<HTMLDivElement>): number | null => {
     const el = containerRef.current
     if (!el) return null
     const rect = el.getBoundingClientRect()
+    if (rect.width === 0 || rect.height === 0) return null
     const x = e.clientX - rect.left
     const y = e.clientY - rect.top
-    if (x < 0 || y < 0 || x >= rect.width || y >= rect.height) return null
-    const col = Math.min(size - 1, Math.floor((x / rect.width) * size))
-    const row = Math.min(size - 1, Math.floor((y / rect.height) * size))
+    const col = Math.min(size - 1, Math.max(0, Math.floor((x / rect.width) * size)))
+    const row = Math.min(size - 1, Math.max(0, Math.floor((y / rect.height) * size)))
     return row * size + col
   }
 
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (celebrating) return
+    if (celebratingRef.current) return
     const idx = cellFromEvent(e)
     if (idx === null) return
     containerRef.current?.setPointerCapture(e.pointerId)

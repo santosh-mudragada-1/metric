@@ -3,7 +3,9 @@ import { createDailyRng, todayKey, yesterdayKey } from '@/lib/dailySeed'
 import {
   getDailyProgress,
   getDailyState,
+  getDailyTimerStart,
   recordDailyCompletion,
+  recordDailyTime,
   setDailyState,
   type DailyGameId,
   type DailyProgress,
@@ -40,6 +42,11 @@ export function useDailyPuzzle<Puzzle, State>(
 
   const complete = () => {
     if (completedToday) return
+    // Recorded synchronously here — before `completedToday` flips and DailyComplete's own
+    // (memoized) read of this same data mounts — rather than in an effect downstream, which
+    // would run one render too late and see a stale, not-yet-written value.
+    const startedAt = getDailyTimerStart(gameId, dateKey)
+    if (startedAt !== null) recordDailyTime(gameId, dateKey, Date.now() - startedAt)
     const next = recordDailyCompletion(gameId, dateKey, yesterdayKey())
     setProgress(next)
     setJustCompleted(true)

@@ -174,7 +174,7 @@ export function PatchesGame() {
     PatchesState
   >('patches', generatePatches, () => ({ rects: [] }))
   const { pushAndSet, undo, canUndo } = useHistory(state, setState)
-  const { celebrating, trigger } = useCelebration(complete)
+  const { celebrating, celebratingRef, trigger } = useCelebration(complete)
   const { width, height, clues, solution } = puzzle
   const rects = state.rects
 
@@ -208,7 +208,7 @@ export function PatchesGame() {
     cellsOf(rect, width).some((i) => coveredBy.has(i) && coveredBy.get(i) !== excludeIdx)
 
   const beginDrag = (x: number, y: number) => {
-    if (celebrating) return
+    if (celebratingRef.current) return
     setDragStart({ x, y })
     setDragCurrent({ x, y })
   }
@@ -218,19 +218,23 @@ export function PatchesGame() {
     setDragCurrent({ x, y })
   }
 
+  // Clamped to the board rather than returning null once the pointer strays outside it — a real
+  // finger dragging near the grid's edge constantly drifts a few pixels past the exact boundary,
+  // and losing tracking there made drags degrade into single-cell taps.
   const cellFromEvent = (e: ReactPointerEvent<HTMLDivElement>): Point | null => {
     const el = containerRef.current
     if (!el) return null
     const rect = el.getBoundingClientRect()
+    if (rect.width === 0 || rect.height === 0) return null
     const px = e.clientX - rect.left
     const py = e.clientY - rect.top
-    if (px < 0 || py < 0 || px >= rect.width || py >= rect.height) return null
-    const x = Math.min(width - 1, Math.floor((px / rect.width) * width))
-    const y = Math.min(height - 1, Math.floor((py / rect.height) * height))
+    const x = Math.min(width - 1, Math.max(0, Math.floor((px / rect.width) * width)))
+    const y = Math.min(height - 1, Math.max(0, Math.floor((py / rect.height) * height)))
     return { x, y }
   }
 
   const onGridPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (celebratingRef.current) return
     const cell = cellFromEvent(e)
     if (!cell) return
     containerRef.current?.setPointerCapture(e.pointerId)
@@ -326,7 +330,6 @@ export function PatchesGame() {
           onPointerMove={onGridPointerMove}
           onPointerUp={endDrag}
           onPointerCancel={endDrag}
-          onPointerLeave={() => dragStart && endDrag()}
         >
           {/* Base dashed grid — always visible underneath everything else. */}
           <div

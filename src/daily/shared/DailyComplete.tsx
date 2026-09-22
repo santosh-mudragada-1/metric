@@ -1,12 +1,13 @@
 import { useNavigate } from 'react-router'
 import { TrophyIcon } from '@heroicons/react/24/solid'
 import { ArrowUpOnSquareIcon, CheckIcon } from '@heroicons/react/24/outline'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/Button'
+import { formatDuration } from '@/daily/shared/formatDuration'
 import { playBack, playClick, playCopy } from '@/lib/sound/sfx'
 import { withViewTransition } from '@/lib/viewTransition'
 import { DAILY_ACCENT_CLASSES, DAILY_GAMES, DAILY_GAME_MAP } from '@/dailyGames.config'
-import { getDailyProgress, type DailyGameId, type DailyProgress } from '@/lib/storage'
+import { getDailyProgress, getDailyTimeStats, type DailyGameId, type DailyProgress } from '@/lib/storage'
 import { todayKey } from '@/lib/dailySeed'
 
 function pickUnplayedGame(currentId: DailyGameId) {
@@ -23,6 +24,7 @@ export function DailyComplete({ gameId, progress }: { gameId: DailyGameId; progr
   const classes = DAILY_ACCENT_CLASSES[game.accent]
   const [shareState, setShareState] = useState<'idle' | 'copied'>('idle')
   const nextGame = pickUnplayedGame(gameId)
+  const timeStats = useMemo(() => getDailyTimeStats(gameId, todayKey()), [gameId])
 
   const share = async () => {
     const url = `${window.location.origin}/daily/${gameId}`
@@ -63,6 +65,27 @@ export function DailyComplete({ gameId, progress }: { gameId: DailyGameId; progr
         <div className={`font-display text-readout font-bold tabular-nums ${classes.text}`}>{progress.streak}</div>
         <p className="text-sm text-text-muted">{progress.streak === 1 ? 'day' : 'consecutive days'}</p>
       </div>
+
+      {timeStats.todayMs !== null && (
+        <div className="flex items-center gap-6">
+          <div className="flex flex-col items-center gap-1">
+            <span className="font-mono text-[0.6875rem] font-medium tracking-[0.14em] text-text-dim uppercase">
+              Today
+            </span>
+            <span className={`font-mono text-lg font-semibold tabular-nums ${classes.text}`}>
+              {formatDuration(timeStats.todayMs)}
+            </span>
+          </div>
+          {timeStats.avgMs !== null && (
+            <div className="flex flex-col items-center gap-1">
+              <span className="font-mono text-[0.6875rem] font-medium tracking-[0.14em] text-text-dim uppercase">
+                Average
+              </span>
+              <span className="font-mono text-lg font-semibold tabular-nums text-text">{formatDuration(timeStats.avgMs)}</span>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="flex w-full max-w-sm flex-col items-center gap-3">
         {nextGame ? (

@@ -156,6 +156,64 @@ export function recordDailyCompletion(gameId: DailyGameId, today: string, yester
   return next
 }
 
+export interface DailyTimeRecord {
+  date: string
+  ms: number
+}
+
+export type DailyTimesMap = Partial<Record<DailyGameId, DailyTimeRecord[]>>
+
+/** How many past solve times to keep per game — enough for a stable average without the array
+ *  growing without bound. */
+const MAX_TIME_HISTORY = 365
+
+export function getDailyTimes(gameId: DailyGameId): DailyTimeRecord[] {
+  const map = read<DailyTimesMap>('dailyTimesV1', {})
+  return map[gameId] ?? []
+}
+
+/** Records how long today's puzzle took, once per day — a duplicate call for the same date
+ *  (e.g. a re-render racing the completion effect) is a no-op. */
+export function recordDailyTime(gameId: DailyGameId, date: string, ms: number): DailyTimeRecord[] {
+  const map = read<DailyTimesMap>('dailyTimesV1', {})
+  const list = map[gameId] ?? []
+  if (list.some((r) => r.date === date)) return list
+  const next = [...list, { date, ms }].slice(-MAX_TIME_HISTORY)
+  map[gameId] = next
+  write('dailyTimesV1', map)
+  return next
+}
+
+export interface DailyTimeStats {
+  todayMs: number | null
+  avgMs: number | null
+  count: number
+}
+
+export function getDailyTimeStats(gameId: DailyGameId, dateKey: string): DailyTimeStats {
+  const list = getDailyTimes(gameId)
+  const today = list.find((r) => r.date === dateKey)
+  const avgMs = list.length > 0 ? Math.round(list.reduce((sum, r) => sum + r.ms, 0) / list.length) : null
+  return { todayMs: today?.ms ?? null, avgMs, count: list.length }
+}
+
+/** Tracks when today's attempt at a puzzle began, so a mid-solve refresh keeps counting from the
+ *  original start rather than resetting to zero. */
+export function getDailyTimerStart(gameId: DailyGameId, dateKey: string): number | null {
+  const wrapper = read<{ date: string; startedAt: number } | null>(`dailyTimerV1:${gameId}`, null)
+  if (!wrapper || wrapper.date !== dateKey) return null
+  return wrapper.startedAt
+}
+
+/** Returns today's start timestamp, creating one now if this is the first call today. */
+export function getOrStartDailyTimer(gameId: DailyGameId, dateKey: string): number {
+  const existing = getDailyTimerStart(gameId, dateKey)
+  if (existing !== null) return existing
+  const startedAt = Date.now()
+  write(`dailyTimerV1:${gameId}`, { date: dateKey, startedAt })
+  return startedAt
+}
+
 /** Persists in-progress board state per game per day, so a refresh doesn't lose work. */
 export function getDailyState<T>(gameId: DailyGameId, dateKey: string, fallback: T): T {
   const wrapper = read<{ date: string; value: T } | null>(`dailyStateV3:${gameId}`, null)

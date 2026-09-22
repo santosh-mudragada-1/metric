@@ -1,9 +1,10 @@
 import { useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router'
 import { useGSAP } from '@gsap/react'
-import { MoonIcon, SpeakerWaveIcon, SpeakerXMarkIcon, SunIcon } from '@heroicons/react/24/outline'
+import { Bars3Icon, MoonIcon, SpeakerWaveIcon, SpeakerXMarkIcon, SunIcon } from '@heroicons/react/24/outline'
 import { IconButton } from '@/components/ui/IconButton'
 import { Button } from '@/components/ui/Button'
+import { Modal } from '@/components/ui/Modal'
 import { AccountMenu } from '@/components/auth/AccountMenu'
 import { AddPasskeyPrompt } from '@/components/auth/AddPasskeyPrompt'
 import { AuthModal } from '@/components/auth/AuthModal'
@@ -25,6 +26,7 @@ export function AppShell() {
   const { theme, toggleTheme } = useTheme()
   const { user } = useAuth()
   const [authOpen, setAuthOpen] = useState(false)
+  const [navOpen, setNavOpen] = useState(false)
   const [nameResolved, setNameResolved] = useState(false)
   const location = useLocation()
   const outletRef = useRef<HTMLDivElement>(null)
@@ -83,11 +85,32 @@ export function AppShell() {
               Sign in
             </Button>
           )}
+          <IconButton label="Open menu" silent onClick={() => setNavOpen(true)} className="sm:hidden">
+            <Bars3Icon className="h-5 w-5" />
+          </IconButton>
         </div>
       </header>
       <main ref={outletRef} className="flex flex-1 flex-col pb-20 sm:pb-24">
         <Outlet />
       </main>
+      <Modal open={navOpen} onClose={() => setNavOpen(false)} title="Menu">
+        <nav className="flex flex-col gap-1">
+          {NAV_ITEMS.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.end}
+              onClick={() => setNavOpen(false)}
+              className={({ isActive }) =>
+                `rounded-lg px-3 py-3 font-display text-base font-semibold transition-colors duration-150
+                ${isActive ? 'bg-surface-hover text-text' : 'text-text-muted hover:bg-surface-hover hover:text-text'}`
+              }
+            >
+              {item.label}
+            </NavLink>
+          ))}
+        </nav>
+      </Modal>
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
       <NamePrompt onResolved={() => setNameResolved(true)} />
       {nameResolved && <AddPasskeyPrompt />}
