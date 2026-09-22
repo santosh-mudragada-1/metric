@@ -1,6 +1,7 @@
 // Violet -> magenta -> rose -> red, sampled by how far along the path a cell sits —
 // gives the "rainbow snake" look of a completed path instead of one flat accent color.
-const GRADIENT_STOPS = ['#7c3aed', '#c026d3', '#e11d48', '#dc2626']
+export const ZIP_GRADIENT_STOPS = ['#7c3aed', '#c026d3', '#e11d48', '#dc2626']
+const GRADIENT_STOPS = ZIP_GRADIENT_STOPS
 
 function hexToRgb(hex: string): [number, number, number] {
   const n = parseInt(hex.slice(1), 16)

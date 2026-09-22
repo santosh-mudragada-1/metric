@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 import { SunIcon, MoonIcon } from '@heroicons/react/24/solid'
-import { ArrowUturnLeftIcon, SparklesIcon, XMarkIcon as XMarkOutline } from '@heroicons/react/24/outline'
+import { ArrowPathIcon, ArrowUturnLeftIcon, SparklesIcon, XMarkIcon as XMarkOutline } from '@heroicons/react/24/outline'
 import { generateTango, isTangoSolved, type TangoSymbol } from '@/daily/tango/generateTango'
 import { useDailyPuzzle } from '@/daily/shared/useDailyPuzzle'
 import { useHistory } from '@/daily/shared/useHistory'
@@ -100,6 +100,11 @@ export function TangoGame() {
     if (isTangoSolved(next, puzzle)) trigger((2 * size - 2) * 40 + 340)
   }
 
+  const clear = () => {
+    playClick()
+    pushAndSet({ grid: givens.slice() })
+  }
+
   const trackSizes = (n: number) => Array.from({ length: 2 * n - 1 }, (_, i) => (i % 2 === 0 ? '1fr' : '0.26fr')).join(' ')
   const hasProgress = grid.some((v, i) => v !== givens[i])
 
@@ -183,6 +188,10 @@ export function TangoGame() {
         </div>
 
         <div className="flex items-center gap-3">
+          <Button variant="ghost" disabled={!hasProgress || celebrating} onClick={clear}>
+            <ArrowPathIcon className="h-4 w-4 shrink-0" />
+            Clear
+          </Button>
           <Button variant="ghost" disabled={!canUndo || celebrating} onClick={undo}>
             <ArrowUturnLeftIcon className="h-4 w-4 shrink-0" />
             Undo

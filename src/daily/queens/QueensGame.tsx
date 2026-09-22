@@ -5,7 +5,7 @@ import { useCelebration } from '@/daily/shared/useCelebration'
 import { DailyGameCard } from '@/daily/shared/DailyGameCard'
 import { PuzzleHelp } from '@/daily/shared/PuzzleHelp'
 import { Button } from '@/components/ui/Button'
-import { ArrowUturnLeftIcon, CheckIcon, SparklesIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { ArrowPathIcon, ArrowUturnLeftIcon, CheckIcon, SparklesIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { playClick } from '@/lib/sound/sfx'
 import type { CSSProperties } from 'react'
 
@@ -103,6 +103,11 @@ export function QueensGame() {
     if (isQueensSolved(next, puzzle)) trigger(size * 90 + 420)
   }
 
+  const clear = () => {
+    playClick()
+    pushAndSet({ grid: new Array(size * size).fill(0) as QueensCell[] })
+  }
+
   return (
     <DailyGameCard
       gameId="queens"
@@ -137,6 +142,10 @@ export function QueensGame() {
         </div>
 
         <div className="flex items-center gap-3">
+          <Button variant="ghost" disabled={!grid.some((v) => v !== 0) || celebrating} onClick={clear}>
+            <ArrowPathIcon className="h-4 w-4 shrink-0" />
+            Clear
+          </Button>
           <Button variant="ghost" disabled={!canUndo || celebrating} onClick={undo}>
             <ArrowUturnLeftIcon className="h-4 w-4 shrink-0" />
             Undo

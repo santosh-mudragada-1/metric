@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react'
+import { useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
 import { generatePatches, isPatchesSolved, PATCHES_PALETTE, type Rect } from '@/daily/patches/generatePatches'
 import { useDailyPuzzle } from '@/daily/shared/useDailyPuzzle'
 import { useHistory } from '@/daily/shared/useHistory'
@@ -6,7 +6,7 @@ import { useCelebration } from '@/daily/shared/useCelebration'
 import { DailyGameCard } from '@/daily/shared/DailyGameCard'
 import { PuzzleHelp } from '@/daily/shared/PuzzleHelp'
 import { Button } from '@/components/ui/Button'
-import { ArrowUturnLeftIcon, CheckIcon, SparklesIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { ArrowPathIcon, ArrowUturnLeftIcon, CheckIcon, SparklesIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { playClick } from '@/lib/sound/sfx'
 
 interface PatchesState {
@@ -42,38 +42,45 @@ const STRONG_BORDER = '2px solid var(--color-ink)'
 const SEED_BORDER = '1px dashed var(--color-border)'
 
 function PatchesDiagram() {
+  // A 2x3 filled block reads as "valid rectangle"; the same 6-cell bounding box with one
+  // corner left empty reads as the "L-shaped" case that Patches never allows.
+  const lShapeFilled = [true, true, true, true, false, true]
   return (
     <div className="flex items-center justify-center gap-6 py-1">
       <div className="flex flex-col items-center gap-1.5">
-        <div className="grid grid-cols-2 gap-0" style={{ width: '2.75rem' }}>
-          {[0, 1, 2, 3].map((i) => (
+        <div className="grid grid-cols-3 gap-0" style={{ width: '3.75rem' }}>
+          {Array.from({ length: 6 }, (_, i) => (
             <div
               key={i}
               className="relative flex aspect-square items-center justify-center"
               style={{ backgroundColor: '#5b8defcc', border: STRONG_BORDER, borderWidth: '1.5px' }}
             >
-              {i === 0 && <span className="text-[0.6rem] font-bold text-white">4</span>}
+              {i === 0 && <span className="text-[0.6rem] font-bold text-white">6</span>}
             </div>
           ))}
         </div>
         <span className="flex items-center gap-1 text-xs font-semibold text-success">
-          <CheckIcon className="h-3 w-3 shrink-0" /> 4 cells, one seed
+          <CheckIcon className="h-3 w-3 shrink-0" /> 2×3 rectangle
         </span>
       </div>
       <div className="flex flex-col items-center gap-1.5">
-        <div className="grid grid-cols-2 gap-0" style={{ width: '2.75rem' }}>
-          <div
-            className="relative flex aspect-square items-center justify-center"
-            style={{ backgroundColor: '#5b8def33', border: '1.5px dashed #5b8def' }}
-          >
-            <span className="text-[0.6rem] font-bold text-text">4</span>
-          </div>
-          <div className="relative flex aspect-square items-center justify-center" style={{ border: SEED_BORDER }} />
-          <div className="relative flex aspect-square items-center justify-center" style={{ border: SEED_BORDER }} />
-          <div className="relative flex aspect-square items-center justify-center" style={{ border: SEED_BORDER }} />
+        <div className="grid grid-cols-3 gap-0" style={{ width: '3.75rem' }}>
+          {lShapeFilled.map((filled, i) => (
+            <div
+              key={i}
+              className="relative flex aspect-square items-center justify-center"
+              style={
+                filled
+                  ? { backgroundColor: '#5b8defcc', border: STRONG_BORDER, borderWidth: '1.5px' }
+                  : { border: SEED_BORDER }
+              }
+            >
+              {i === 0 && <span className="text-[0.6rem] font-bold text-white">6</span>}
+            </div>
+          ))}
         </div>
         <span className="flex items-center gap-1 text-xs font-semibold text-danger">
-          <XMarkIcon className="h-3 w-3 shrink-0" /> not grown yet
+          <XMarkIcon className="h-3 w-3 shrink-0" /> L-shape, not allowed
         </span>
       </div>
     </div>
@@ -90,6 +97,9 @@ export function PatchesGame() {
   const { width, height, clues, solution } = puzzle
   const rects = state.rects
 
+  const containerRef = useRef<HTMLDivElement>(null)
+  const drawing = useRef(false)
+  const lastCellRef = useRef<string | null>(null)
   const [dragStart, setDragStart] = useState<Point | null>(null)
   const [dragCurrent, setDragCurrent] = useState<Point | null>(null)
   const [rejectFlash, setRejectFlash] = useState(false)
@@ -124,7 +134,44 @@ export function PatchesGame() {
     setDragCurrent({ x, y })
   }
 
+  const cellFromEvent = (e: ReactPointerEvent<HTMLDivElement>): Point | null => {
+    const el = containerRef.current
+    if (!el) return null
+    const rect = el.getBoundingClientRect()
+    const px = e.clientX - rect.left
+    const py = e.clientY - rect.top
+    if (px < 0 || py < 0 || px >= rect.width || py >= rect.height) return null
+    const x = Math.min(width - 1, Math.floor((px / rect.width) * width))
+    const y = Math.min(height - 1, Math.floor((py / rect.height) * height))
+    return { x, y }
+  }
+
+  const onGridPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const cell = cellFromEvent(e)
+    if (!cell) return
+    containerRef.current?.setPointerCapture(e.pointerId)
+    drawing.current = true
+    lastCellRef.current = `${cell.x},${cell.y}`
+    beginDrag(cell.x, cell.y)
+  }
+
+  const onGridPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (!drawing.current) return
+    const cell = cellFromEvent(e)
+    if (!cell) return
+    const key = `${cell.x},${cell.y}`
+    if (key === lastCellRef.current) return
+    lastCellRef.current = key
+    updateDrag(cell.x, cell.y)
+  }
+
+  const stopDrawing = () => {
+    drawing.current = false
+    lastCellRef.current = null
+  }
+
   const endDrag = () => {
+    stopDrawing()
     if (!dragStart || !dragCurrent) return
     const candidate = boundsOf(dragStart, dragCurrent)
     setDragStart(null)
@@ -171,6 +218,11 @@ export function PatchesGame() {
     if (isPatchesSolved(next, puzzle)) trigger(next.length * 60 + 320)
   }
 
+  const clear = () => {
+    playClick()
+    pushAndSet({ rects: [] })
+  }
+
   const dragRect = dragStart && dragCurrent ? boundsOf(dragStart, dragCurrent) : null
   const largestClue = clues.reduce((max, c) => (c.value > max.value ? c : max), clues[0])
 
@@ -183,9 +235,13 @@ export function PatchesGame() {
     >
       <div className="flex flex-col items-center gap-6">
         <div
+          ref={containerRef}
           className={`grid touch-none select-none transition-transform ${rejectFlash ? 'animate-pulse' : ''}`}
           style={{ gridTemplateColumns: `repeat(${width}, minmax(0, 1fr))`, width: 'min(92vw, 32rem)' }}
+          onPointerDown={onGridPointerDown}
+          onPointerMove={onGridPointerMove}
           onPointerUp={endDrag}
+          onPointerCancel={endDrag}
           onPointerLeave={() => dragStart && endDrag()}
         >
           {Array.from({ length: width * height }, (_, idx) => {
@@ -220,8 +276,6 @@ export function PatchesGame() {
             return (
               <div
                 key={idx}
-                onPointerDown={() => beginDrag(x, y)}
-                onPointerEnter={() => updateDrag(x, y)}
                 className="celebrate-cell relative flex aspect-square cursor-pointer items-center justify-center"
                 style={{ ...borderStyle, ...lockStyle }}
               >
@@ -243,6 +297,10 @@ export function PatchesGame() {
         </div>
 
         <div className="flex items-center gap-3">
+          <Button variant="ghost" disabled={rects.length === 0 || celebrating} onClick={clear}>
+            <ArrowPathIcon className="h-4 w-4 shrink-0" />
+            Clear
+          </Button>
           <Button variant="ghost" disabled={!canUndo || celebrating} onClick={undo}>
             <ArrowUturnLeftIcon className="h-4 w-4 shrink-0" />
             Undo

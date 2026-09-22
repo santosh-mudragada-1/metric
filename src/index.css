@@ -326,6 +326,39 @@
   }
 }
 
+/* A rejected move on a puzzle cell — quick, local, and clearly "no" without disturbing anything else. */
+@keyframes zip-reject-flash {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+  30% {
+    transform: scale(1.15);
+    opacity: 0.9;
+  }
+}
+
+.zip-reject-flash {
+  animation: zip-reject-flash 220ms ease-out;
+}
+
+/* Hardword: a submitted guess's tiles flip open one at a time to reveal their color. */
+@keyframes hardword-reveal {
+  0% {
+    transform: scaleY(0.15);
+    opacity: 0.5;
+  }
+  55% {
+    transform: scaleY(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
 @keyframes reaction-pulse {
   0%,
   100% {

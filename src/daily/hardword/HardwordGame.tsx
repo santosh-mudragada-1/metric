@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router'
-import { BackspaceIcon } from '@heroicons/react/24/outline'
+import { ArrowUturnLeftIcon, BackspaceIcon, SparklesIcon } from '@heroicons/react/24/outline'
 import { evaluateGuess, generateHardword, isValidWord, type LetterState } from '@/daily/hardword/generateHardword'
 import { useDailyPuzzle } from '@/daily/shared/useDailyPuzzle'
 import { DailyGameCard } from '@/daily/shared/DailyGameCard'
@@ -37,13 +38,24 @@ export function HardwordGame() {
 
   const [current, setCurrent] = useState('')
   const [shake, setShake] = useState(false)
+  const [revealingRow, setRevealingRow] = useState<number | null>(null)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 639px)')
+    const update = () => setIsMobile(mq.matches)
+    update()
+    mq.addEventListener('change', update)
+    return () => mq.removeEventListener('change', update)
+  }, [])
 
   const solved = guesses.includes(answer)
   const lost = !solved && guesses.length >= maxGuesses
   const finished = solved || lost
+  const locked = finished || revealingRow !== null
 
   const submit = () => {
-    if (finished) return
+    if (locked) return
     if (current.length !== length) {
       setShake(true)
       setTimeout(() => setShake(false), 300)
@@ -55,21 +67,40 @@ export function HardwordGame() {
       setTimeout(() => setShake(false), 300)
       return
     }
-    const next = [...guesses, current]
+    const guessWord = current
+    const next = [...guesses, guessWord]
     setState({ guesses: next })
     setCurrent('')
-    if (current === answer) complete()
-    else if (next.length >= maxGuesses) playFail()
+    const rowIdx = next.length - 1
+    setRevealingRow(rowIdx)
+    const revealMs = length * 90 + 420
+    setTimeout(() => {
+      setRevealingRow(null)
+      if (guessWord === answer) complete()
+      else if (next.length >= maxGuesses) playFail()
+    }, revealMs)
   }
 
   const backspace = () => setCurrent((c) => c.slice(0, -1))
   const typeLetter = (letter: string) => {
-    if (finished) return
+    if (locked) return
     setCurrent((c) => (c.length < length ? c + letter : c))
   }
 
+  const undoLetter = () => {
+    if (locked || current.length === 0) return
+    playClick()
+    backspace()
+  }
+
+  const hint = () => {
+    if (locked || current.length >= length) return
+    playClick()
+    setCurrent(answer.slice(0, current.length + 1))
+  }
+
   useEffect(() => {
-    if (finished) return
+    if (locked) return
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Enter') submit()
       else if (e.key === 'Backspace') backspace()
@@ -100,15 +131,20 @@ export function HardwordGame() {
             const guess = guesses[row]
             const isCurrentRow = row === guesses.length && !finished
             const letters = guess ? evaluateGuess(guess, answer) : null
+            const isRevealing = row === revealingRow
 
             return (
               <div key={row} className="flex gap-1.5">
                 {Array.from({ length }, (_, col) => {
                   const letter = guess ? guess[col] : isCurrentRow ? current[col] : undefined
                   const letterState = letters?.[col]
+                  const revealStyle: CSSProperties = isRevealing
+                    ? { animation: 'hardword-reveal 260ms ease-out both', animationDelay: `${col * 90}ms` }
+                    : {}
                   return (
                     <div
                       key={col}
+                      style={revealStyle}
                       className={`flex h-11 w-11 items-center justify-center rounded-md border font-display text-lg
                         font-bold uppercase sm:h-13 sm:w-13 ${
                           letterState
@@ -136,57 +172,92 @@ export function HardwordGame() {
         )}
 
         {!finished && (
-          <div className="flex flex-col gap-1.5">
-            {KEY_ROWS.map((row, i) => (
-              <div key={i} className="flex justify-center gap-1.5">
-                {row.map((key) => {
-                  if (key === 'enter') {
-                    return (
-                      <button
-                        key={key}
-                        onClick={() => {
-                          playClick()
-                          submit()
-                        }}
-                        className="flex h-11 items-center justify-center rounded-md border border-border-strong bg-surface-raised px-3 font-mono text-[0.65rem] font-semibold tracking-wide text-text uppercase hover:bg-surface-hover"
-                      >
-                        Enter
-                      </button>
-                    )
-                  }
-                  if (key === 'back') {
-                    return (
-                      <button
-                        key={key}
-                        onClick={() => {
-                          playClick()
-                          backspace()
-                        }}
-                        className="flex h-11 items-center justify-center rounded-md border border-border-strong bg-surface-raised px-3 text-text hover:bg-surface-hover"
-                      >
-                        <BackspaceIcon className="h-4 w-4" />
-                      </button>
-                    )
-                  }
-                  const ks = keyState[key]
-                  return (
-                    <button
-                      key={key}
-                      onClick={() => {
-                        playClick()
-                        typeLetter(key)
-                      }}
-                      className={`flex h-11 w-8 items-center justify-center rounded-md border font-display text-sm font-semibold uppercase sm:w-9
-                        ${ks ? TILE_CLASSES[ks] : 'border-border-strong bg-surface-raised text-text hover:bg-surface-hover'}`}
-                    >
-                      {key}
-                    </button>
-                  )
-                })}
-              </div>
-            ))}
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" disabled={locked || current.length === 0} onClick={undoLetter}>
+              <ArrowUturnLeftIcon className="h-4 w-4 shrink-0" />
+              Undo
+            </Button>
+            <Button variant="ghost" disabled={locked || current.length >= length} onClick={hint}>
+              <SparklesIcon className="h-4 w-4 shrink-0" />
+              Hint
+            </Button>
           </div>
         )}
+
+        {!finished && isMobile && <div className="h-52 w-full shrink-0" aria-hidden />}
+
+        {!finished &&
+          (() => {
+            const keyRows = (
+              <>
+                {KEY_ROWS.map((row, i) => (
+                  <div key={i} className="flex justify-center gap-1.5">
+                    {row.map((key) => {
+                      if (key === 'enter') {
+                        return (
+                          <button
+                            key={key}
+                            disabled={locked}
+                            onClick={() => {
+                              playClick()
+                              submit()
+                            }}
+                            className="flex h-11 flex-1 items-center justify-center rounded-md border border-border-strong bg-surface-raised px-3 font-mono text-[0.65rem] font-semibold tracking-wide text-text uppercase transition-transform duration-100 hover:bg-surface-hover active:scale-95 disabled:opacity-40 sm:flex-none"
+                          >
+                            Enter
+                          </button>
+                        )
+                      }
+                      if (key === 'back') {
+                        return (
+                          <button
+                            key={key}
+                            disabled={locked}
+                            onClick={() => {
+                              playClick()
+                              backspace()
+                            }}
+                            className="flex h-11 flex-1 items-center justify-center rounded-md border border-border-strong bg-surface-raised px-3 text-text transition-transform duration-100 hover:bg-surface-hover active:scale-95 disabled:opacity-40 sm:flex-none"
+                          >
+                            <BackspaceIcon className="h-4 w-4" />
+                          </button>
+                        )
+                      }
+                      const ks = keyState[key]
+                      return (
+                        <button
+                          key={key}
+                          disabled={locked}
+                          onClick={() => {
+                            playClick()
+                            typeLetter(key)
+                          }}
+                          className={`flex h-11 flex-1 items-center justify-center rounded-md border font-display text-sm font-semibold uppercase
+                            transition-transform duration-100 active:scale-95 disabled:opacity-40 sm:w-9 sm:flex-none
+                            ${ks ? TILE_CLASSES[ks] : 'border-border-strong bg-surface-raised text-text hover:bg-surface-hover'}`}
+                        >
+                          {key}
+                        </button>
+                      )
+                    })}
+                  </div>
+                ))}
+              </>
+            )
+
+            // On mobile, the keyboard is portaled straight to <body> — GSAP's route-transition
+            // tween leaves an inline transform on <main> after it settles, which (per the CSS
+            // spec) turns it into a new containing block for any `position: fixed` descendant,
+            // silently breaking "stick to the bottom of the viewport". Portaling escapes that.
+            return isMobile
+              ? createPortal(
+                  <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+                    <div className="mx-auto flex max-w-md flex-col gap-1.5">{keyRows}</div>
+                  </div>,
+                  document.body,
+                )
+              : <div className="flex flex-col gap-1.5">{keyRows}</div>
+          })()}
 
         {lost && (
           <Button variant="ghost" onClick={() => withViewTransition(() => navigate('/daily'))}>
