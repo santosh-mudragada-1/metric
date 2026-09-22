@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
-import { generateZip } from '@/daily/zip/generateZip'
-import { zipColorAt, ZIP_GRADIENT_STOPS } from '@/daily/zip/pathColor'
+import { generateZip, isWallBetween } from '@/daily/zip/generateZip'
+import { ZIP_PATH_COLOR } from '@/daily/zip/pathColor'
 import { useDailyPuzzle } from '@/daily/shared/useDailyPuzzle'
 import { useHistory } from '@/daily/shared/useHistory'
 import { useCelebration } from '@/daily/shared/useCelebration'
@@ -29,7 +29,7 @@ function ZipDiagram() {
             <span className="flex h-7 w-7 items-center justify-center rounded-full bg-ink font-display text-xs font-bold text-chalk">
               {i + 1}
             </span>
-            {i < 2 && <span className="h-1 w-6 rounded-full" style={{ backgroundColor: zipColorAt(i / 2) }} />}
+            {i < 2 && <span className="h-1 w-6 rounded-full" style={{ backgroundColor: ZIP_PATH_COLOR }} />}
           </div>
         ))}
       </div>
@@ -52,7 +52,7 @@ export function ZipGame() {
   >('zip', generateZip, () => ({ path: [] }))
   const { pushAndSet, undo, canUndo } = useHistory(state, setState)
   const { celebrating, trigger } = useCelebration(complete)
-  const { size, checkpoints, solutionPath } = puzzle
+  const { size, checkpoints, solutionPath, walls } = puzzle
   const total = size * size
   const path = state.path
 
@@ -81,6 +81,7 @@ export function ZipGame() {
     }
     const last = path[path.length - 1]
     if (!isAdjacent(size, last, idx)) return false
+    if (isWallBetween(walls, last, idx)) return false
     const cellNumber = checkpoints[idx]
     if (cellNumber !== 0 && cellNumber !== nextRequired) return false
     const next = [...path, idx]
@@ -157,7 +158,7 @@ export function ZipGame() {
   const points = path.map((idx) => ({ x: (idx % size) + 0.5, y: Math.floor(idx / size) + 0.5 }))
   const pathD = points.length > 0 ? `M ${points[0].x} ${points[0].y} ` + points.slice(1).map((p) => `L ${p.x} ${p.y}`).join(' ') : ''
   const pathLen = Math.max(points.length - 1, 1)
-  const gradientId = 'zip-path-gradient'
+  const STROKE_WIDTH = 0.46
 
   return (
     <DailyGameCard gameId="zip" completedToday={completedToday} progress={progress} hasProgress={path.length > 0}>
@@ -188,26 +189,12 @@ export function ZipGame() {
             viewBox={`0 0 ${size} ${size}`}
             preserveAspectRatio="none"
           >
-            <defs>
-              <linearGradient
-                id={gradientId}
-                gradientUnits="userSpaceOnUse"
-                x1={points[0]?.x ?? 0}
-                y1={points[0]?.y ?? 0}
-                x2={points[points.length - 1]?.x ?? size}
-                y2={points[points.length - 1]?.y ?? size}
-              >
-                {ZIP_GRADIENT_STOPS.map((stop, i) => (
-                  <stop key={stop} offset={i / (ZIP_GRADIENT_STOPS.length - 1)} stopColor={stop} />
-                ))}
-              </linearGradient>
-            </defs>
             {pathD && (
               <path
                 d={pathD}
                 fill="none"
-                stroke={`url(#${gradientId})`}
-                strokeWidth={0.34}
+                stroke={ZIP_PATH_COLOR}
+                strokeWidth={STROKE_WIDTH}
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
@@ -219,13 +206,25 @@ export function ZipGame() {
                 fill="none"
                 stroke="white"
                 strokeOpacity={0.85}
-                strokeWidth={0.34}
+                strokeWidth={STROKE_WIDTH}
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeDasharray={`3 ${pathLen}`}
                 strokeDashoffset={pathLen + 4}
               />
             )}
+            {walls.map(([a, b], i) => {
+              const ar = Math.floor(a / size)
+              const ac = a % size
+              const br = Math.floor(b / size)
+              const bc = b % size
+              const sameRow = ar === br
+              const x1 = sameRow ? Math.min(ac, bc) + 1 : ac
+              const y1 = sameRow ? ar : Math.min(ar, br) + 1
+              const x2 = sameRow ? x1 : ac + 1
+              const y2 = sameRow ? y1 + 1 : y1
+              return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--color-ink)" strokeWidth={0.13} strokeLinecap="round" />
+            })}
           </svg>
 
           <div

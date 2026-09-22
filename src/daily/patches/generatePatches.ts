@@ -1,7 +1,7 @@
 import type { Rng } from '@/lib/dailySeed'
 import { shuffle } from '@/lib/dailySeed'
 
-export const PATCHES_WIDTH = 8
+export const PATCHES_WIDTH = 6
 export const PATCHES_HEIGHT = 6
 const MAX_PIECE_AREA = 9
 
@@ -41,6 +41,16 @@ export interface PatchesPuzzle {
   solution: Rect[]
 }
 
+/** A cut point for splitting a length-`total` run into two pieces, chosen so that if the
+ *  perpendicular side is only 1 cell wide, neither resulting piece ends up as a 1x1 — Patches
+ *  pieces are never allowed to be a single cell. Returns null when no such cut exists (the run
+ *  is too short to split safely), meaning the caller should not split at all. */
+function chooseCut(rng: Rng, total: number, perpendicularIsOne: boolean): number | null {
+  if (!perpendicularIsOne) return 1 + Math.floor(rng() * (total - 1))
+  if (total < 4) return null
+  return 2 + Math.floor(rng() * (total - 3))
+}
+
 function subdivide(rng: Rng, rect: Rect, out: Rect[]): void {
   const area = rect.w * rect.h
   const canSplitVert = rect.w >= 2
@@ -52,6 +62,11 @@ function subdivide(rng: Rng, rect: Rect, out: Rect[]): void {
     out.push(rect)
     return
   }
+  // Never split a domino (or smaller) — that's the only way a 1x1 piece could appear.
+  if (area <= 2) {
+    out.push(rect)
+    return
+  }
   if (!mustSplit && rng() < stopChance) {
     out.push(rect)
     return
@@ -60,11 +75,19 @@ function subdivide(rng: Rng, rect: Rect, out: Rect[]): void {
   const axis: 'v' | 'h' = canSplitVert && canSplitHorz ? (rng() < 0.5 ? 'v' : 'h') : canSplitVert ? 'v' : 'h'
 
   if (axis === 'v') {
-    const cut = 1 + Math.floor(rng() * (rect.w - 1))
+    const cut = chooseCut(rng, rect.w, rect.h === 1)
+    if (cut === null) {
+      out.push(rect)
+      return
+    }
     subdivide(rng, { x: rect.x, y: rect.y, w: cut, h: rect.h }, out)
     subdivide(rng, { x: rect.x + cut, y: rect.y, w: rect.w - cut, h: rect.h }, out)
   } else {
-    const cut = 1 + Math.floor(rng() * (rect.h - 1))
+    const cut = chooseCut(rng, rect.h, rect.w === 1)
+    if (cut === null) {
+      out.push(rect)
+      return
+    }
     subdivide(rng, { x: rect.x, y: rect.y, w: rect.w, h: cut }, out)
     subdivide(rng, { x: rect.x, y: rect.y + cut, w: rect.w, h: rect.h - cut }, out)
   }

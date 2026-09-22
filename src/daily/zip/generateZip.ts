@@ -1,4 +1,5 @@
 import type { Rng } from '@/lib/dailySeed'
+import { shuffle } from '@/lib/dailySeed'
 
 export const ZIP_SIZE = 6
 export const ZIP_CHECKPOINTS = 6
@@ -10,6 +11,19 @@ export interface ZipPuzzle {
   /** The Hamiltonian route used to place the checkpoints — a valid full solution, kept around
    *  only so the in-game hint can reveal "the next cell" without re-deriving one. */
   solutionPath: number[]
+  /** Blocked edges between orthogonally adjacent cells — walls the path may never cross.
+   *  Always chosen from edges the solution path doesn't use, so it stays solvable. */
+  walls: Array<[number, number]>
+}
+
+function edgeKey(a: number, b: number): string {
+  return a < b ? `${a}-${b}` : `${b}-${a}`
+}
+
+/** True when a and b are adjacent cells separated by a wall. */
+export function isWallBetween(walls: Array<[number, number]>, a: number, b: number): boolean {
+  const key = edgeKey(a, b)
+  return walls.some(([x, y]) => edgeKey(x, y) === key)
 }
 
 function neighbors(size: number, idx: number): number[] {
@@ -77,5 +91,21 @@ export function generateZip(rng: Rng): ZipPuzzle {
     checkpoints[path[pos]] = i + 1
   }
 
-  return { size, checkpoints, solutionPath: path }
+  // Walls only ever sit on edges the solution path doesn't use, so the puzzle stays solvable —
+  // they just close off shortcuts the player would otherwise be tempted to take.
+  const usedEdges = new Set<string>()
+  for (let i = 0; i < path.length - 1; i++) usedEdges.add(edgeKey(path[i], path[i + 1]))
+
+  const candidateEdges: Array<[number, number]> = []
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      const idx = r * size + c
+      if (c < size - 1 && !usedEdges.has(edgeKey(idx, idx + 1))) candidateEdges.push([idx, idx + 1])
+      if (r < size - 1 && !usedEdges.has(edgeKey(idx, idx + size))) candidateEdges.push([idx, idx + size])
+    }
+  }
+  const wallCount = Math.min(candidateEdges.length, Math.max(2, Math.round(size / 2)))
+  const walls = shuffle(rng, candidateEdges).slice(0, wallCount)
+
+  return { size, checkpoints, solutionPath: path, walls }
 }

@@ -1,7 +1,7 @@
 import { useEffect, useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router'
-import { ArrowUturnLeftIcon, BackspaceIcon, SparklesIcon } from '@heroicons/react/24/outline'
+import { BackspaceIcon } from '@heroicons/react/24/outline'
 import { evaluateGuess, generateHardword, isValidWord, type LetterState } from '@/daily/hardword/generateHardword'
 import { useDailyPuzzle } from '@/daily/shared/useDailyPuzzle'
 import { DailyGameCard } from '@/daily/shared/DailyGameCard'
@@ -87,18 +87,6 @@ export function HardwordGame() {
     setCurrent((c) => (c.length < length ? c + letter : c))
   }
 
-  const undoLetter = () => {
-    if (locked || current.length === 0) return
-    playClick()
-    backspace()
-  }
-
-  const hint = () => {
-    if (locked || current.length >= length) return
-    playClick()
-    setCurrent(answer.slice(0, current.length + 1))
-  }
-
   useEffect(() => {
     if (locked) return
     const onKeyDown = (e: KeyboardEvent) => {
@@ -168,19 +156,6 @@ export function HardwordGame() {
             <p className="font-mono text-sm text-text-muted">
               Out of guesses — it was <span className="font-bold text-text uppercase">{answer}</span>
             </p>
-          </div>
-        )}
-
-        {!finished && (
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" disabled={locked || current.length === 0} onClick={undoLetter}>
-              <ArrowUturnLeftIcon className="h-4 w-4 shrink-0" />
-              Undo
-            </Button>
-            <Button variant="ghost" disabled={locked || current.length >= length} onClick={hint}>
-              <SparklesIcon className="h-4 w-4 shrink-0" />
-              Hint
-            </Button>
           </div>
         )}
 

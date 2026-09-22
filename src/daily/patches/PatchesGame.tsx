@@ -41,6 +41,14 @@ function cellsOf(rect: Rect, width: number): number[] {
 const STRONG_BORDER = '2px solid var(--color-ink)'
 const SEED_BORDER = '1px dashed var(--color-border)'
 
+function darkenHex(hex: string, amount: number): string {
+  const n = parseInt(hex.slice(1), 16)
+  const r = Math.round(((n >> 16) & 255) * (1 - amount))
+  const g = Math.round(((n >> 8) & 255) * (1 - amount))
+  const b = Math.round((n & 255) * (1 - amount))
+  return `rgb(${r}, ${g}, ${b})`
+}
+
 function PatchesDiagram() {
   // A 2x3 filled block reads as "valid rectangle"; the same 6-cell bounding box with one
   // corner left empty reads as the "L-shaped" case that Patches never allows.
@@ -108,7 +116,8 @@ export function PatchesGame() {
   const coveredBy = new Map<number, number>()
   rects.forEach((rect, ri) => cellsOf(rect, width).forEach((i) => coveredBy.set(i, ri)))
 
-  // Per placed rectangle: its color (from whichever seed it contains) and whether it's the right size.
+  // Per placed rectangle: its color (from whichever seed it contains), whether it's the right
+  // size, and the cell at its geometric center (for the small "echo" badge once it's complete).
   const rectInfo = rects.map((rect, ri) => {
     const containedClue = clues.find((c) => {
       const cx = c.idx % width
@@ -117,7 +126,9 @@ export function PatchesGame() {
     })
     const color = containedClue?.color ?? PATCHES_PALETTE[ri % PATCHES_PALETTE.length]
     const isComplete = containedClue ? rect.w * rect.h === containedClue.value : true
-    return { color, isComplete, clueIdx: containedClue?.idx }
+    const centerX = rect.x + Math.floor((rect.w - 1) / 2)
+    const centerY = rect.y + Math.floor((rect.h - 1) / 2)
+    return { color, isComplete, clueIdx: containedClue?.idx, value: containedClue?.value, centerIdx: centerY * width + centerX }
   })
 
   const overlaps = (rect: Rect, excludeIdx?: number): boolean =>
@@ -260,18 +271,21 @@ export function PatchesGame() {
               return coveredBy.get(ny * width + nx) === rectIdx
             }
 
+            const regionBorderColor = info ? darkenHex(info.color, 0.35) : null
             const borderStyle: CSSProperties =
               rectIdx !== undefined
                 ? {
-                    borderTop: neighborSameRect(0, -1) ? 'none' : STRONG_BORDER,
-                    borderBottom: neighborSameRect(0, 1) ? 'none' : STRONG_BORDER,
-                    borderLeft: neighborSameRect(-1, 0) ? 'none' : STRONG_BORDER,
-                    borderRight: neighborSameRect(1, 0) ? 'none' : STRONG_BORDER,
+                    borderTop: neighborSameRect(0, -1) ? 'none' : `2px solid ${regionBorderColor}`,
+                    borderBottom: neighborSameRect(0, 1) ? 'none' : `2px solid ${regionBorderColor}`,
+                    borderLeft: neighborSameRect(-1, 0) ? 'none' : `2px solid ${regionBorderColor}`,
+                    borderRight: neighborSameRect(1, 0) ? 'none' : `2px solid ${regionBorderColor}`,
                   }
                 : { border: SEED_BORDER }
 
             const lockStyle: CSSProperties =
               celebrating && rectIdx !== undefined ? { animation: 'patches-lock 340ms ease-out both', animationDelay: `${rectIdx * 60}ms` } : {}
+
+            const isEchoCell = info && rectIdx !== undefined && info.isComplete && rectInfo[rectIdx].centerIdx === idx && idx !== info.clueIdx
 
             return (
               <div
@@ -280,15 +294,24 @@ export function PatchesGame() {
                 style={{ ...borderStyle, ...lockStyle }}
               >
                 {info && (
-                  <div className="absolute inset-0" style={{ backgroundColor: `${info.color}${info.isComplete ? 'cc' : '80'}` }} />
+                  <div className="absolute inset-0" style={{ backgroundColor: `${info.color}${info.isComplete ? 'f0' : '55'}` }} />
                 )}
                 {inDrag && <div className="absolute inset-0 bg-text/15" />}
-                {clue && (!info || (!info.isComplete && info.clueIdx === idx)) && (
+                {/* The original numbered seed stays visible at its own cell for the entire game,
+                    solid and un-decorated — it never gets hidden once its region is complete. */}
+                {clue && clue.value !== 1 && (
+                  <div className="absolute inset-[18%] flex items-center justify-center rounded-md" style={{ backgroundColor: clue.color }}>
+                    <span className="font-display text-sm font-bold text-white sm:text-base">{clue.value}</span>
+                  </div>
+                )}
+                {isEchoCell && info.value !== 1 && (
                   <div
-                    className="absolute inset-[12%] flex items-center justify-center rounded-lg border-2 border-dashed"
-                    style={{ backgroundColor: `${clue.color}66`, borderColor: clue.color }}
+                    className="absolute inset-[32%] flex items-center justify-center rounded-md border-2"
+                    style={{ borderColor: regionBorderColor ?? undefined, backgroundColor: `${info.color}40` }}
                   >
-                    <span className="font-display text-sm font-bold text-text sm:text-base">{clue.value}</span>
+                    <span className="font-display text-[0.65rem] font-bold sm:text-xs" style={{ color: regionBorderColor ?? undefined }}>
+                      {info.value}
+                    </span>
                   </div>
                 )}
               </div>
