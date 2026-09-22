@@ -81,7 +81,8 @@ export default function StatsPage() {
   const [tab, setTab] = useState<StatsTab>('reflex')
 
   useEffect(() => {
-    if (!user || !supabase) {
+    const client = supabase
+    if (!user || !client) {
       setStats({})
       setLoading(false)
       return
@@ -89,10 +90,20 @@ export default function StatsPage() {
     let cancelled = false
     setLoading(true)
 
-    supabase
+    type Row = { game_id: GameId; metric_value: number; avg_hit_ms: number | null }
+
+    client
       .from('game_results')
       .select('game_id, metric_value, avg_hit_ms')
       .eq('user_id', user.id)
+      .then(async (res) => {
+        // `avg_hit_ms` may not exist yet on this project's `game_results` table (it's an
+        // additive column added for Aim Trainer's avg-hit-time stat — see supabase/schema.sql).
+        // Until that migration is run, selecting it errors out the whole query, so fall back to
+        // the base columns rather than losing every reflex-test stat over one missing column.
+        if (res.error) return client.from('game_results').select('game_id, metric_value').eq('user_id', user.id)
+        return res
+      })
       .then(({ data, error }) => {
         if (cancelled) return
         if (error || !data) {
@@ -100,7 +111,6 @@ export default function StatsPage() {
           setLoading(false)
           return
         }
-        type Row = { game_id: GameId; metric_value: number; avg_hit_ms: number | null }
         const grouped: Partial<Record<GameId, Row[]>> = {}
         for (const row of data as Row[]) {
           const list = grouped[row.game_id] ?? (grouped[row.game_id] = [])

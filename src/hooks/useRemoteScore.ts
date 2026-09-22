@@ -18,6 +18,15 @@ export function useRemoteScore(gameId: GameId) {
       const { error } = await supabase
         .from('game_results')
         .insert({ user_id: user.id, game_id: gameId, metric_value: metricValue, ...extra })
+      if (error && extra) {
+        // `extra` columns (e.g. avg_hit_ms) may not exist on this project's table yet — retry
+        // with just the base columns so the run is still recorded rather than dropped entirely.
+        const { error: retryError } = await supabase
+          .from('game_results')
+          .insert({ user_id: user.id, game_id: gameId, metric_value: metricValue })
+        if (retryError) console.error(`Failed to log ${gameId} result to Supabase:`, retryError)
+        return
+      }
       if (error) console.error(`Failed to log ${gameId} result to Supabase:`, error)
     },
     [gameId],
