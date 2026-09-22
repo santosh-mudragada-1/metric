@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router'
 import { useGSAP } from '@gsap/react'
 import { Bars3Icon, MoonIcon, SpeakerWaveIcon, SpeakerXMarkIcon, SunIcon } from '@heroicons/react/24/outline'
@@ -13,6 +13,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useSound } from '@/hooks/useSound'
 import { useTheme } from '@/hooks/useTheme'
 import { enterMode } from '@/lib/animation/presets'
+import { trackPageView } from '@/lib/analytics'
 
 const NAV_ITEMS = [
   { to: '/', label: 'Play', end: true },
@@ -34,6 +35,10 @@ export function AppShell() {
   useGSAP(() => {
     enterMode(outletRef.current)
   }, [location.pathname])
+
+  useEffect(() => {
+    trackPageView(location.pathname + location.search)
+  }, [location.pathname, location.search])
 
   return (
     <div className="mx-auto flex min-h-svh max-w-5xl flex-col px-4 sm:px-6">
