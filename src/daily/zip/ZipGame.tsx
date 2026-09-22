@@ -66,6 +66,11 @@ export function ZipGame() {
   const nextRequired = path.filter((idx) => checkpoints[idx] !== 0).length + 1
 
   const sweepDuration = () => Math.min(1400, 480 + (total - 1) * 16)
+  // The last checkpoint node doesn't start its 380ms "zip-travel" pop until the glow sweep
+  // reaches it (animationDelay === sweepDuration()), so the celebration must stay open at least
+  // that long past the sweep — otherwise it gets cut off mid-pop and looks like a second,
+  // truncated cycle instead of one clean pass.
+  const celebrationDuration = () => sweepDuration() + 380 + 120
 
   const extendTo = (idx: number): boolean => {
     if (celebrating) return false
@@ -86,7 +91,7 @@ export function ZipGame() {
     if (cellNumber !== 0 && cellNumber !== nextRequired) return false
     const next = [...path, idx]
     pushAndSet({ path: next })
-    if (next.length === total) trigger(sweepDuration() + 260)
+    if (next.length === total) trigger(celebrationDuration())
     return true
   }
 
@@ -141,11 +146,14 @@ export function ZipGame() {
     playClick()
     const next = solutionPath.slice(0, Math.min(path.length + 1, total))
     pushAndSet({ path: next })
-    if (next.length === total) trigger(sweepDuration() + 260)
+    if (next.length === total) trigger(celebrationDuration())
   }
 
   useEffect(() => {
     if (!celebrating || !glowRef.current) return
+    // getAnimations() guards against React StrictMode's dev-only double-invoke re-running this
+    // effect and starting a second, overlapping sweep on the same element.
+    if (glowRef.current.getAnimations().length > 0) return
     const len = Math.max(path.length - 1, 1)
     glowRef.current.animate([{ strokeDashoffset: len + 4 }, { strokeDashoffset: -4 }], {
       duration: sweepDuration(),

@@ -1,5 +1,5 @@
 import { useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
-import { generatePatches, isPatchesSolved, PATCHES_PALETTE, type Rect } from '@/daily/patches/generatePatches'
+import { generatePatches, isPatchesSolved, PATCHES_PALETTE, type PatchesShape, type Rect } from '@/daily/patches/generatePatches'
 import { useDailyPuzzle } from '@/daily/shared/useDailyPuzzle'
 import { useHistory } from '@/daily/shared/useHistory'
 import { useCelebration } from '@/daily/shared/useCelebration'
@@ -47,6 +47,79 @@ function darkenHex(hex: string, amount: number): string {
   const g = Math.round(((n >> 8) & 255) * (1 - amount))
   const b = Math.round((n & 255) * (1 - amount))
   return `rgb(${r}, ${g}, ${b})`
+}
+
+/** Positions a rect as a single absolutely-positioned box within the board (percentage-based, so
+ *  it tracks the grid at any size), inset by a fixed pixel gutter so adjacent regions read as
+ *  distinct rounded shapes rather than one edge-to-edge slab. */
+function rectStyle(rect: Rect, width: number, height: number, gutter: number): CSSProperties {
+  const leftPct = (rect.x / width) * 100
+  const topPct = (rect.y / height) * 100
+  const wPct = (rect.w / width) * 100
+  const hPct = (rect.h / height) * 100
+  return {
+    left: `calc(${leftPct}% + ${gutter}px)`,
+    top: `calc(${topPct}% + ${gutter}px)`,
+    width: `calc(${wPct}% - ${gutter * 2}px)`,
+    height: `calc(${hPct}% - ${gutter * 2}px)`,
+  }
+}
+
+/** A badge's width/height (as a fraction of its cell) — wide and tall clues get an
+ *  aspect-ratio-hinting badge; square and ambiguous ("any") clues get an even one. */
+function badgeSize(shape: PatchesShape): CSSProperties {
+  switch (shape) {
+    case 'wide':
+      return { width: '72%', height: '42%' }
+    case 'tall':
+      return { width: '42%', height: '72%' }
+    default:
+      return { width: '56%', height: '56%' }
+  }
+}
+
+function ShapeIcon({ shape }: { shape: PatchesShape }) {
+  return (
+    <span
+      className={shape === 'any' ? 'patches-any-icon rounded-[3px] border-2 border-dashed border-text-dim' : 'rounded-[3px] bg-text-dim'}
+      style={badgeSize(shape) as CSSProperties}
+    />
+  )
+}
+
+function PatchesShapeLegend() {
+  return (
+    <div className="w-full rounded-panel border border-border bg-surface p-4" style={{ maxWidth: 'min(92vw, 32rem)' }}>
+      <p className="text-center font-display text-sm font-bold text-text">Complete each shape to fill the grid</p>
+      <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2.5">
+        <div className="flex items-center gap-2">
+          <span className="flex h-6 w-6 items-center justify-center">
+            <ShapeIcon shape="square" />
+          </span>
+          <span className="text-sm font-semibold text-text">Square</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="flex h-6 w-6 items-center justify-center">
+            <ShapeIcon shape="tall" />
+          </span>
+          <span className="text-sm font-semibold text-text">Tall rectangle</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="flex h-6 w-6 items-center justify-center">
+            <ShapeIcon shape="wide" />
+          </span>
+          <span className="text-sm font-semibold text-text">Wide rectangle</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="flex h-6 w-6 items-center justify-center">
+            <ShapeIcon shape="any" />
+          </span>
+          <span className="text-sm font-semibold text-text">Any of the above</span>
+        </div>
+      </div>
+      <p className="mt-3 text-center text-sm text-text-muted">If a shape has a number, it must be that size.</p>
+    </div>
+  )
 }
 
 function PatchesDiagram() {
@@ -247,76 +320,91 @@ export function PatchesGame() {
       <div className="flex flex-col items-center gap-6">
         <div
           ref={containerRef}
-          className={`grid touch-none select-none transition-transform ${rejectFlash ? 'animate-pulse' : ''}`}
-          style={{ gridTemplateColumns: `repeat(${width}, minmax(0, 1fr))`, width: 'min(92vw, 32rem)' }}
+          className={`relative touch-none select-none transition-transform ${rejectFlash ? 'animate-pulse' : ''}`}
+          style={{ width: 'min(92vw, 32rem)', aspectRatio: `${width} / ${height}` }}
           onPointerDown={onGridPointerDown}
           onPointerMove={onGridPointerMove}
           onPointerUp={endDrag}
           onPointerCancel={endDrag}
           onPointerLeave={() => dragStart && endDrag()}
         >
-          {Array.from({ length: width * height }, (_, idx) => {
-            const x = idx % width
-            const y = Math.floor(idx / width)
-            const rectIdx = coveredBy.get(idx)
-            const info = rectIdx !== undefined ? rectInfo[rectIdx] : null
-            const clue = clueAt.get(idx)
-            const inDrag =
-              dragRect && x >= dragRect.x && x < dragRect.x + dragRect.w && y >= dragRect.y && y < dragRect.y + dragRect.h
+          {/* Base dashed grid — always visible underneath everything else. */}
+          <div
+            className="absolute inset-0 grid overflow-hidden rounded-xl"
+            style={{ gridTemplateColumns: `repeat(${width}, minmax(0, 1fr))`, gridTemplateRows: `repeat(${height}, minmax(0, 1fr))` }}
+          >
+            {Array.from({ length: width * height }, (_, idx) => (
+              <div key={idx} style={{ border: SEED_BORDER }} />
+            ))}
+          </div>
 
-            const neighborSameRect = (dx: number, dy: number) => {
-              const nx = x + dx
-              const ny = y + dy
-              if (nx < 0 || nx >= width || ny < 0 || ny >= height) return false
-              return coveredBy.get(ny * width + nx) === rectIdx
-            }
+          {/* Drag-in-progress preview — a single rounded rectangle, not per-cell tinting. */}
+          {dragRect && (
+            <div
+              className="pointer-events-none absolute rounded-xl border-2 border-dashed border-text"
+              style={{ ...rectStyle(dragRect, width, height, 2), backgroundColor: 'color-mix(in oklab, var(--color-text) 12%, transparent)' }}
+            />
+          )}
 
-            const regionBorderColor = info ? darkenHex(info.color, 0.35) : null
-            const borderStyle: CSSProperties =
-              rectIdx !== undefined
-                ? {
-                    borderTop: neighborSameRect(0, -1) ? 'none' : `2px solid ${regionBorderColor}`,
-                    borderBottom: neighborSameRect(0, 1) ? 'none' : `2px solid ${regionBorderColor}`,
-                    borderLeft: neighborSameRect(-1, 0) ? 'none' : `2px solid ${regionBorderColor}`,
-                    borderRight: neighborSameRect(1, 0) ? 'none' : `2px solid ${regionBorderColor}`,
-                  }
-                : { border: SEED_BORDER }
-
-            const lockStyle: CSSProperties =
-              celebrating && rectIdx !== undefined ? { animation: 'patches-lock 340ms ease-out both', animationDelay: `${rectIdx * 60}ms` } : {}
-
-            const isEchoCell = info && rectIdx !== undefined && info.isComplete && rectInfo[rectIdx].centerIdx === idx && idx !== info.clueIdx
-
+          {/* Locked/placed regions — each its own rounded rectangle with a saturated stroke and a
+              light, pastel fill, matching the reference's clean rectangle-and-stroke look. */}
+          {rects.map((rect, ri) => {
+            const info = rectInfo[ri]
+            const strokeColor = darkenHex(info.color, 0.2)
             return (
               <div
-                key={idx}
-                className="celebrate-cell relative flex aspect-square cursor-pointer items-center justify-center"
-                style={{ ...borderStyle, ...lockStyle }}
-              >
-                {info && (
-                  <div className="absolute inset-0" style={{ backgroundColor: `${info.color}${info.isComplete ? 'f0' : '55'}` }} />
-                )}
-                {inDrag && <div className="absolute inset-0 bg-text/15" />}
-                {/* The original numbered seed stays visible at its own cell for the entire game,
-                    solid and un-decorated — it never gets hidden once its region is complete. */}
-                {clue && clue.value !== 1 && (
-                  <div className="absolute inset-[18%] flex items-center justify-center rounded-md" style={{ backgroundColor: clue.color }}>
-                    <span className="font-display text-sm font-bold text-white sm:text-base">{clue.value}</span>
-                  </div>
-                )}
-                {isEchoCell && info.value !== 1 && (
-                  <div
-                    className="absolute inset-[32%] flex items-center justify-center rounded-md border-2"
-                    style={{ borderColor: regionBorderColor ?? undefined, backgroundColor: `${info.color}40` }}
-                  >
-                    <span className="font-display text-[0.65rem] font-bold sm:text-xs" style={{ color: regionBorderColor ?? undefined }}>
-                      {info.value}
-                    </span>
-                  </div>
-                )}
-              </div>
+                key={ri}
+                className="celebrate-cell pointer-events-none absolute rounded-xl"
+                style={{
+                  ...rectStyle(rect, width, height, 3),
+                  border: `2px solid ${strokeColor}`,
+                  backgroundColor: `${info.color}${info.isComplete ? '30' : '55'}`,
+                  ...(celebrating ? { animation: 'patches-lock 340ms ease-out both', animationDelay: `${ri * 60}ms` } : {}),
+                }}
+              />
             )
           })}
+
+          {/* Clue + shape-hint badges, positioned per-cell on top of everything. */}
+          <div
+            className="pointer-events-none absolute inset-0 grid"
+            style={{ gridTemplateColumns: `repeat(${width}, minmax(0, 1fr))`, gridTemplateRows: `repeat(${height}, minmax(0, 1fr))` }}
+          >
+            {Array.from({ length: width * height }, (_, idx) => {
+              const rectIdx = coveredBy.get(idx)
+              const info = rectIdx !== undefined ? rectInfo[rectIdx] : null
+              const clue = clueAt.get(idx)
+              const regionBorderColor = info ? darkenHex(info.color, 0.35) : null
+              const isEchoCell = info && rectIdx !== undefined && info.isComplete && rectInfo[rectIdx].centerIdx === idx && idx !== info.clueIdx
+
+              return (
+                <div key={idx} className="relative flex items-center justify-center">
+                  {/* The original numbered seed stays visible at its own cell for the entire
+                      game, solid and un-decorated — it never gets hidden once its region is
+                      complete. Its shape reflects what the number alone tells you about the
+                      piece's orientation (see the legend below the board). */}
+                  {clue && clue.value !== 1 && (
+                    <div
+                      className={clue.shape === 'any' ? 'patches-any-icon absolute flex items-center justify-center rounded-md border-2 border-dashed' : 'absolute flex items-center justify-center rounded-md'}
+                      style={{ ...badgeSize(clue.shape), backgroundColor: clue.color, borderColor: clue.shape === 'any' ? darkenHex(clue.color, 0.35) : undefined }}
+                    >
+                      <span className="font-display text-sm font-bold text-white sm:text-base">{clue.value}</span>
+                    </div>
+                  )}
+                  {isEchoCell && info.value !== 1 && (
+                    <div
+                      className="absolute inset-[38%] flex items-center justify-center rounded-md border"
+                      style={{ borderColor: regionBorderColor ?? undefined, backgroundColor: 'var(--color-surface)' }}
+                    >
+                      <span className="font-display text-[0.6rem] font-bold sm:text-xs" style={{ color: regionBorderColor ?? undefined }}>
+                        {info.value}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
@@ -333,6 +421,8 @@ export function PatchesGame() {
             Hint
           </Button>
         </div>
+
+        <PatchesShapeLegend />
 
         <PuzzleHelp
           tip={

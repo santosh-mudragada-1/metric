@@ -17,15 +17,13 @@ function nextCell(v: QueensCell): QueensCell {
   return v === 0 ? 1 : v === 1 ? 2 : 0
 }
 
-const CROWN_COLOR = '#f0b429'
-
 function Crown({ style }: { style?: CSSProperties }) {
   return (
-    <svg viewBox="0 0 24 24" className="h-1/2 w-1/2" style={style}>
+    <svg viewBox="0 0 24 24" className="h-1/2 w-1/2 text-text" style={style}>
       <path
         d="M4 18h16l-1.2-8.2-3.6 2.7L12 6l-3.2 6.5-3.6-2.7L4 18Z"
-        fill={CROWN_COLOR}
-        stroke="#00000055"
+        fill="currentColor"
+        stroke="var(--color-canvas)"
         strokeWidth="1"
         strokeLinejoin="round"
       />

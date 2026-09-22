@@ -326,6 +326,14 @@
   }
 }
 
+/* Patches: the "any of the above" shape-hint icon — a dotted texture inside a dashed border,
+   since the clue's number doesn't pin down a single rectangle orientation on its own. */
+.patches-any-icon {
+  background-image: radial-gradient(currentColor 1px, transparent 1.5px);
+  background-size: 5px 5px;
+  color: var(--color-text-dim);
+}
+
 /* A rejected move on a puzzle cell — quick, local, and clearly "no" without disturbing anything else. */
 @keyframes zip-reject-flash {
   0%,

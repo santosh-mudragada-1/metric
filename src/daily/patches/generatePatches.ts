@@ -25,11 +25,23 @@ export interface Rect {
   h: number
 }
 
+/** The clue's own hint shape — drawn as a miniature of the piece's real orientation, so the
+ *  badge itself previews square / tall / wide before the region is placed. 'any' is reserved for
+ *  degenerate cases with no well-formed rectangle (kept for the legend's sake; generation never
+ *  produces it, since every generated piece has a concrete w × h). */
+export type PatchesShape = 'square' | 'tall' | 'wide' | 'any'
+
 export interface PatchesClue {
   idx: number
   value: number
   /** Stable per-piece color, assigned at generation time (not draw order). */
   color: string
+  shape: PatchesShape
+}
+
+export function classifyPatchesShape(w: number, h: number): PatchesShape {
+  if (w < 1 || h < 1) return 'any'
+  return w === h ? 'square' : h > w ? 'tall' : 'wide'
 }
 
 export interface PatchesPuzzle {
@@ -103,7 +115,8 @@ export function generatePatches(rng: Rng): PatchesPuzzle {
   const clues: PatchesClue[] = pieces.map((rect, i) => {
     const cx = rect.x + Math.floor(rng() * rect.w)
     const cy = rect.y + Math.floor(rng() * rect.h)
-    return { idx: cy * width + cx, value: rect.w * rect.h, color: colors[i % colors.length] }
+    const value = rect.w * rect.h
+    return { idx: cy * width + cx, value, color: colors[i % colors.length], shape: classifyPatchesShape(rect.w, rect.h) }
   })
 
   return { width, height, clues, solution: pieces }
