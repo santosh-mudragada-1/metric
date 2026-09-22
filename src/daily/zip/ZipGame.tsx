@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
 import { generateZip, isWallBetween } from '@/daily/zip/generateZip'
-import { ZIP_PATH_COLOR } from '@/daily/zip/pathColor'
+import { ZIP_GRADIENT_FROM, ZIP_GRADIENT_TO, ZIP_PATH_COLOR } from '@/daily/zip/pathColor'
 import { useDailyPuzzle } from '@/daily/shared/useDailyPuzzle'
 import { useHistory } from '@/daily/shared/useHistory'
 import { useCelebration } from '@/daily/shared/useCelebration'
@@ -158,7 +158,7 @@ export function ZipGame() {
   const points = path.map((idx) => ({ x: (idx % size) + 0.5, y: Math.floor(idx / size) + 0.5 }))
   const pathD = points.length > 0 ? `M ${points[0].x} ${points[0].y} ` + points.slice(1).map((p) => `L ${p.x} ${p.y}`).join(' ') : ''
   const pathLen = Math.max(points.length - 1, 1)
-  const STROKE_WIDTH = 0.46
+  const STROKE_WIDTH = 0.62
 
   return (
     <DailyGameCard gameId="zip" completedToday={completedToday} progress={progress} hasProgress={path.length > 0}>
@@ -189,11 +189,20 @@ export function ZipGame() {
             viewBox={`0 0 ${size} ${size}`}
             preserveAspectRatio="none"
           >
+            <defs>
+              {/* userSpaceOnUse + coordinates fixed to the grid (not the path's own bounding box)
+                  so each cell's color is fixed by its position on the board — it never
+                  recalculates, and therefore never shifts, as the path grows or shrinks. */}
+              <linearGradient id="zip-path-gradient" gradientUnits="userSpaceOnUse" x1={0} y1={0} x2={size} y2={size}>
+                <stop offset="0%" stopColor={ZIP_GRADIENT_FROM} />
+                <stop offset="100%" stopColor={ZIP_GRADIENT_TO} />
+              </linearGradient>
+            </defs>
             {pathD && (
               <path
                 d={pathD}
                 fill="none"
-                stroke={ZIP_PATH_COLOR}
+                stroke="url(#zip-path-gradient)"
                 strokeWidth={STROKE_WIDTH}
                 strokeLinecap="round"
                 strokeLinejoin="round"
