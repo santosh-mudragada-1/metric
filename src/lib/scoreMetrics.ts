@@ -14,7 +14,7 @@ const round = (value: number) => `${Math.round(value)}`
 
 export const SCORE_METRICS: Record<GameId, ScoreMetricConfig> = {
   'reaction-time': { label: 'Reaction time', unit: 'ms', direction: 'lower-better', format: round },
-  'aim-trainer': { label: 'Targets hit', direction: 'higher-better', format: round },
+  'aim-trainer': { label: 'Accuracy', unit: '%', direction: 'higher-better', format: round },
   'sequence-memory': { label: 'Level reached', direction: 'higher-better', format: round },
   'number-memory': { label: 'Digits remembered', direction: 'higher-better', format: round },
   'chimp-test': { label: 'Level reached', direction: 'higher-better', format: round },

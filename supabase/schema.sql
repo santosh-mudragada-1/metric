@@ -9,6 +9,10 @@ create table if not exists public.game_results (
   played_at timestamptz not null default now()
 );
 
+-- Aim Trainer logs accuracy as metric_value and avg hit time separately here (nullable — every
+-- other game leaves this null). Run this against an existing project to pick up the column.
+alter table public.game_results add column if not exists avg_hit_ms numeric;
+
 create index if not exists game_results_user_game_idx on public.game_results (user_id, game_id);
 
 alter table public.game_results enable row level security;

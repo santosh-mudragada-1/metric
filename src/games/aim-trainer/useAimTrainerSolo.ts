@@ -89,13 +89,17 @@ export function useAimTrainerSolo() {
   useEffect(() => {
     if (phase !== 'result' || recordedRef.current) return
     recordedRef.current = true
-    logResult(hits)
-    if (!best || hits > best.bestHits || (hits === best.bestHits && accuracy > best.bestAccuracy)) {
-      record({ bestHits: hits, bestAccuracy: accuracy, lastPlayedAt: new Date().toISOString() })
+    logResult(accuracy, { avg_hit_ms: avgHitMs })
+    const isBetter =
+      !best || accuracy > best.bestAccuracy || (accuracy === best.bestAccuracy && avgHitMs < best.bestAvgHitMs)
+    if (isBetter) {
+      record({ bestAccuracy: accuracy, bestAvgHitMs: avgHitMs, lastPlayedAt: new Date().toISOString() })
     }
-  }, [phase, hits, accuracy, best, record, logResult])
+  }, [phase, accuracy, avgHitMs, best, record, logResult])
 
-  const isNewBest = phase === 'result' && (!best || hits > best.bestHits)
+  const isNewBest =
+    phase === 'result' &&
+    (!best || accuracy > best.bestAccuracy || (accuracy === best.bestAccuracy && avgHitMs < best.bestAvgHitMs))
 
   return {
     phase,

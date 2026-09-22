@@ -25,7 +25,7 @@ interface PrimaryStat {
 interface ResultCardProps {
   gameId: GameId
   accent: GameConfig['accent']
-  primary: PrimaryStat
+  primary: PrimaryStat | PrimaryStat[]
   stats?: StatItem[]
   isNewBest?: boolean
   onPlayAgain: () => void
@@ -52,16 +52,17 @@ export function ResultCard({
   const navigate = useNavigate()
   const { profile, updateName } = useProfile()
   const rootRef = useRef<HTMLDivElement>(null)
-  const numberRef = useRef<HTMLSpanElement>(null)
+  const numberRefs = useRef<(HTMLSpanElement | null)[]>([])
   const statsRef = useRef<HTMLDivElement>(null)
   const classes = ACCENT_CLASSES[accent]
+  const primaries = Array.isArray(primary) ? primary : [primary]
 
   const [editingName, setEditingName] = useState(false)
   const [nameDraft, setNameDraft] = useState(profile.name)
   const [shareState, setShareState] = useState<'idle' | 'copied'>('idle')
 
   useGSAP(() => {
-    countUp(numberRef.current, { to: primary.value, duration: 0.9 })
+    primaries.forEach((p, i) => countUp(numberRefs.current[i], { to: p.value, duration: 0.9 }))
     if (statsRef.current && stats.length > 0) {
       staggerReveal(Array.from(statsRef.current.children) as Element[], {
         stagger: 0.07,
@@ -82,7 +83,8 @@ export function ResultCard({
 
   const shareResult = async () => {
     const url = `${window.location.origin}/play/${gameId}`
-    const shareText = `I scored ${primary.value}${primary.unit ?? ''} on ${GAME_MAP[gameId].name} in Metric — come try it.`
+    const scoreText = primaries.map((p) => `${p.value}${p.unit ?? ''}`).join(' · ')
+    const shareText = `I scored ${scoreText} on ${GAME_MAP[gameId].name} in Metric — come try it.`
 
     let shared = false
     if (navigator.share) {
@@ -119,14 +121,19 @@ export function ResultCard({
         </div>
       )}
 
-      <div className="flex flex-col items-center gap-2">
-        <span className="font-mono text-xs font-medium tracking-[0.2em] text-text-dim uppercase">
-          {primary.label}
-        </span>
-        <div className={`flex items-baseline gap-2 font-display text-readout font-bold tabular-nums ${classes.text}`}>
-          <span ref={numberRef}>0</span>
-          {primary.unit && <span className="text-3xl font-semibold text-text-muted sm:text-4xl">{primary.unit}</span>}
-        </div>
+      <div className={`flex ${primaries.length > 1 ? 'flex-row gap-8 sm:gap-14' : 'flex-col'} items-center`}>
+        {primaries.map((p, i) => (
+          <div key={p.label} className="flex flex-col items-center gap-2">
+            <span className="font-mono text-xs font-medium tracking-[0.2em] text-text-dim uppercase">{p.label}</span>
+            <div
+              className={`flex items-baseline gap-1.5 font-display font-bold tabular-nums ${classes.text}
+                ${primaries.length > 1 ? 'text-5xl sm:text-7xl' : 'text-readout'}`}
+            >
+              <span ref={(el) => { numberRefs.current[i] = el }}>0</span>
+              {p.unit && <span className="text-2xl font-semibold text-text-muted sm:text-3xl">{p.unit}</span>}
+            </div>
+          </div>
+        ))}
       </div>
 
       {stats.length > 0 && (

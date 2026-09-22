@@ -17,13 +17,19 @@ interface GameStat {
   count: number
   best: number
   average: number
+  /** Aim Trainer only: avg hit time (ms) alongside the accuracy-based best/average above. */
+  bestAvgHitMs?: number
+  avgAvgHitMs?: number
 }
 
 type StatsByGame = Partial<Record<GameId, GameStat>>
 
-function formatStat(gameId: GameId, value: number): string {
+function formatStat(gameId: GameId, stat: GameStat, kind: 'best' | 'average'): string {
   const metric = SCORE_METRICS[gameId]
-  return metric.unit ? `${metric.format(value)} ${metric.unit}` : metric.format(value)
+  const value = kind === 'best' ? stat.best : stat.average
+  const base = metric.unit ? `${metric.format(value)} ${metric.unit}` : metric.format(value)
+  const ms = kind === 'best' ? stat.bestAvgHitMs : stat.avgAvgHitMs
+  return ms != null ? `${base} · ${Math.round(ms)}ms` : base
 }
 
 /** Daily puzzle stats live entirely in localStorage (there's no account tie-in), so — unlike the
@@ -85,7 +91,7 @@ export default function StatsPage() {
 
     supabase
       .from('game_results')
-      .select('game_id, metric_value')
+      .select('game_id, metric_value, avg_hit_ms')
       .eq('user_id', user.id)
       .then(({ data, error }) => {
         if (cancelled) return
@@ -94,17 +100,28 @@ export default function StatsPage() {
           setLoading(false)
           return
         }
-        const grouped: Partial<Record<GameId, number[]>> = {}
-        for (const row of data as { game_id: GameId; metric_value: number }[]) {
+        type Row = { game_id: GameId; metric_value: number; avg_hit_ms: number | null }
+        const grouped: Partial<Record<GameId, Row[]>> = {}
+        for (const row of data as Row[]) {
           const list = grouped[row.game_id] ?? (grouped[row.game_id] = [])
-          list.push(Number(row.metric_value))
+          list.push(row)
         }
         const next: StatsByGame = {}
-        for (const [gameId, values] of Object.entries(grouped) as [GameId, number[]][]) {
+        for (const [gameId, rows] of Object.entries(grouped) as [GameId, Row[]][]) {
           const metric = SCORE_METRICS[gameId]
-          const best = metric.direction === 'lower-better' ? Math.min(...values) : Math.max(...values)
+          const values = rows.map((r) => Number(r.metric_value))
+          const bestValue = metric.direction === 'lower-better' ? Math.min(...values) : Math.max(...values)
           const average = values.reduce((a, b) => a + b, 0) / values.length
-          next[gameId] = { count: values.length, best, average }
+          const stat: GameStat = { count: rows.length, best: bestValue, average }
+
+          if (gameId === 'aim-trainer') {
+            const bestRow = rows.find((r) => Number(r.metric_value) === bestValue) ?? rows[0]
+            const times = rows.map((r) => r.avg_hit_ms).filter((ms): ms is number => ms != null)
+            if (bestRow.avg_hit_ms != null) stat.bestAvgHitMs = Number(bestRow.avg_hit_ms)
+            if (times.length > 0) stat.avgAvgHitMs = times.reduce((a, b) => a + b, 0) / times.length
+          }
+
+          next[gameId] = stat
         }
         setStats(next)
         setLoading(false)
@@ -175,8 +192,8 @@ export default function StatsPage() {
                     {stat ? `${stat.count} run${stat.count === 1 ? '' : 's'} played` : 'No runs yet'}
                   </p>
                 </div>
-                <StatTile label="Best" value={stat ? formatStat(game.id, stat.best) : '—'} accent={game.accent} />
-                <StatTile label="Average" value={stat ? formatStat(game.id, stat.average) : '—'} accent={game.accent} />
+                <StatTile label="Best" value={stat ? formatStat(game.id, stat, 'best') : '—'} accent={game.accent} />
+                <StatTile label="Average" value={stat ? formatStat(game.id, stat, 'average') : '—'} accent={game.accent} />
               </div>
             )
           })}

@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 /** Logs one completed run to Supabase for the signed-in player, for the stats page's avg/best. */
 export function useRemoteScore(gameId: GameId) {
   const logResult = useCallback(
-    async (metricValue: number) => {
+    async (metricValue: number, extra?: Record<string, number>) => {
       if (!supabase) return
       // Re-checks the session directly instead of trusting a `user` value captured in a closure —
       // that value can still be null right after a page load (the initial `getSession()` call
@@ -15,7 +15,9 @@ export function useRemoteScore(gameId: GameId) {
       const user = data?.user
       if (userError || !user) return
 
-      const { error } = await supabase.from('game_results').insert({ user_id: user.id, game_id: gameId, metric_value: metricValue })
+      const { error } = await supabase
+        .from('game_results')
+        .insert({ user_id: user.id, game_id: gameId, metric_value: metricValue, ...extra })
       if (error) console.error(`Failed to log ${gameId} result to Supabase:`, error)
     },
     [gameId],

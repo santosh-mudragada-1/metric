@@ -21,7 +21,7 @@ function metricValueFor(gameId: GameId, best: NonNullable<Bests[GameId]>): numbe
     case 'reaction-time':
       return (best as ReactionTimeBest).bestMs
     case 'aim-trainer':
-      return (best as AimTrainerBest).bestHits
+      return (best as AimTrainerBest).bestAccuracy
     case 'sequence-memory':
       return (best as SequenceMemoryBest).bestLevel
     case 'number-memory':
@@ -53,6 +53,7 @@ export async function migrateLocalBestsIfNeeded(userId: string): Promise<void> {
       user_id: userId,
       game_id: gameId,
       metric_value: metricValueFor(gameId, best),
+      ...(gameId === 'aim-trainer' ? { avg_hit_ms: (best as AimTrainerBest).bestAvgHitMs } : {}),
     }))
 
   if (rows.length === 0) {

@@ -24,8 +24,8 @@ export interface ReactionTimeBest {
 }
 
 export interface AimTrainerBest {
-  bestHits: number
   bestAccuracy: number
+  bestAvgHitMs: number
   lastPlayedAt: string
 }
 

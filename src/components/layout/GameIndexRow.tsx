@@ -24,7 +24,7 @@ function formatBest(game: GameConfig, best: Bests[keyof Bests]): string | null {
     case 'reaction-time':
       return 'bestMs' in best ? `${best.bestMs} ms best` : null
     case 'aim-trainer':
-      return 'bestHits' in best ? `${best.bestHits} hits best` : null
+      return 'bestAvgHitMs' in best ? `${best.bestAccuracy}% · ${best.bestAvgHitMs}ms best` : null
     case 'sequence-memory':
       return 'bestLevel' in best ? `level ${best.bestLevel} best` : null
     case 'number-memory':
