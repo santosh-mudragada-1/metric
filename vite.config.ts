@@ -17,4 +17,16 @@ export default defineConfig({
     // created on desktop) — default Vite only binds to localhost.
     host: true,
   },
+  build: {
+    rollupOptions: {
+      // Two HTML entries sharing one SPA bundle, so social crawlers (which don't
+      // run JS) see route-appropriate og:image/description depending on which
+      // file vercel.json routes them to — index.html for everything, daily.html
+      // for /daily*. React Router still owns client-side navigation from either.
+      input: {
+        main: path.resolve(import.meta.dirname, 'index.html'),
+        daily: path.resolve(import.meta.dirname, 'daily.html'),
+      },
+    },
+  },
 })
