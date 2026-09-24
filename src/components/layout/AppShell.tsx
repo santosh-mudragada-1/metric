@@ -44,7 +44,7 @@ export function AppShell() {
     <div className="mx-auto flex min-h-svh max-w-5xl flex-col px-4 sm:px-6">
       <header className="flex items-center justify-between py-6 sm:py-8">
         <div className="flex items-center gap-8 sm:gap-10">
-          <Link to="/" className="logo-mark font-display text-4xl sm:text-5xl leading-none tracking-tight text-text">
+          <Link to="/" className="logo-mark font-display text-[33px] sm:text-[42px] leading-none tracking-tight text-text">
             metric
           </Link>
           <nav className="hidden items-center gap-6 sm:flex">
