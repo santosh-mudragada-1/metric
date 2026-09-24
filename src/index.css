@@ -178,8 +178,8 @@
 }
 
 @layer components {
-  /* Lettermark logo — Google Sans Flex at its heaviest weight, easing to regular on hover.
-     Relies on the variable font's full wght range (loaded site-wide) to interpolate smoothly. */
+  /* Wordmark logo — Google Sans Flex at its heaviest weight (900 is this font's ceiling;
+     the variable axis doesn't render any heavier beyond that), easing to regular on hover. */
   .logo-mark {
     font-weight: 900;
     transition: font-weight 280ms ease;
