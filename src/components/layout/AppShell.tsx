@@ -44,9 +44,8 @@ export function AppShell() {
     <div className="mx-auto flex min-h-svh max-w-5xl flex-col px-4 sm:px-6">
       <header className="flex items-center justify-between py-6 sm:py-8">
         <div className="flex items-center gap-8 sm:gap-10">
-          <Link to="/" className="flex items-center gap-2 font-display text-base font-semibold tracking-tight text-text">
-            <img src={theme === 'dark' ? '/logo-dark.svg' : '/logo.svg'} alt="" className="h-5 w-auto" />
-            metric
+          <Link to="/" aria-label="Metric" className="logo-mark font-display text-2xl leading-none text-text">
+            m
           </Link>
           <nav className="hidden items-center gap-6 sm:flex">
             {NAV_ITEMS.map((item) => (

@@ -178,6 +178,17 @@
 }
 
 @layer components {
+  /* Lettermark logo — Google Sans Flex at its heaviest weight, easing to regular on hover.
+     Relies on the variable font's full wght range (loaded site-wide) to interpolate smoothly. */
+  .logo-mark {
+    font-weight: 900;
+    transition: font-weight 280ms ease;
+  }
+
+  .logo-mark:hover {
+    font-weight: 400;
+  }
+
   /* Faint instrument-panel ruling — a texture, not a gradient. Opt-in per element. */
   .grid-texture {
     background-image:
