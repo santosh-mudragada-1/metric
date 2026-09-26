@@ -19,7 +19,7 @@ const ACCENT_TEXT: Record<GameConfig['accent'], string> = {
   typing: 'group-hover:text-accent-typing',
 }
 
-function formatBest(game: GameConfig, best: Bests[keyof Bests]): string | null {
+export function formatBest(game: GameConfig, best: Bests[keyof Bests]): string | null {
   if (!best) return null
   switch (game.id) {
     case 'reaction-time':

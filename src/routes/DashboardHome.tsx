@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { ArrowRightIcon } from '@heroicons/react/24/outline'
 import { GAMES } from '@/games.config'
@@ -7,14 +8,21 @@ import { useAnimation } from '@/hooks/useAnimation'
 import { heroHoverIn, heroHoverOut, pressDown, pressUp } from '@/lib/animation/presets'
 import { playClick, playRainbowHover } from '@/lib/sound/sfx'
 import { withViewTransition } from '@/lib/viewTransition'
+import { getAllRuns, getPlayStreak } from '@/lib/progress'
 
 export default function DashboardHome() {
   const navigate = useNavigate()
   const { scope, run } = useAnimation<HTMLButtonElement>()
+  const [streak] = useState(getPlayStreak)
 
   const goToFlagship = () => {
     playClick()
-    const game = GAMES[Math.floor(Math.random() * GAMES.length)]
+    // Favor tests not yet played today, so "random" nudges players across all eight.
+    const startOfDay = new Date().setHours(0, 0, 0, 0)
+    const runs = getAllRuns()
+    const fresh = GAMES.filter((g) => !(runs[g.id] ?? []).some((r) => r.t >= startOfDay))
+    const pool = fresh.length > 0 ? fresh : GAMES
+    const game = pool[Math.floor(Math.random() * pool.length)]
     withViewTransition(() => navigate(`/play/${game.id}`))
   }
 
@@ -28,6 +36,12 @@ export default function DashboardHome() {
       <section className="flex flex-col gap-8 sm:gap-10">
         <span className="font-mono text-xs font-medium tracking-[0.18em] text-text-dim uppercase sm:text-sm">
           Metric · eight tests
+          {streak.streak > 0 &&
+            (streak.playedToday ? (
+              <span className="text-signal"> · {streak.streak}-day streak</span>
+            ) : (
+              <span className="text-signal"> · {streak.streak}-day streak · play to keep it</span>
+            ))}
         </span>
 
         <AnimatedHeading

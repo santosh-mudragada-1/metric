@@ -2,12 +2,14 @@ import { useCallback } from 'react'
 import { usePostHog } from '@posthog/react'
 import type { GameId } from '@shared/types'
 import { supabase } from '@/lib/supabase'
+import { recordRun } from '@/lib/progress'
 
-/** Logs one completed run to Supabase for the signed-in player, for the stats page's avg/best. */
+/** Logs one completed run locally (history + play streak) and to Supabase for the signed-in player. */
 export function useRemoteScore(gameId: GameId) {
   const posthog = usePostHog()
   const logResult = useCallback(
     async (metricValue: number, extra?: Record<string, number>) => {
+      recordRun(gameId, metricValue)
       posthog?.capture('game_completed', {
         game_id: gameId,
         game: gameId,

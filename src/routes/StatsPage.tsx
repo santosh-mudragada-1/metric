@@ -10,6 +10,7 @@ import { todayKey } from '@/lib/dailySeed'
 import { SCORE_METRICS } from '@/lib/scoreMetrics'
 import { supabase } from '@/lib/supabase'
 import { getDailyProgress, getDailyTimeStats, type DailyGameId } from '@/lib/storage'
+import { bestMetric, getAllRuns } from '@/lib/progress'
 import { useAuth } from '@/hooks/useAuth'
 import type { GameId } from '@shared/types'
 
@@ -71,6 +72,25 @@ function DailyGamesStats() {
   )
 }
 
+/** Guest stats from this device's run history — so the tab is useful before signing in. */
+function localStats(): StatsByGame {
+  const runs = getAllRuns()
+  const next: StatsByGame = {}
+  for (const game of GAMES) {
+    const values = (runs[game.id] ?? []).map((r) => r.v)
+    const storedBest = bestMetric(game.id)
+    if (values.length === 0) continue
+    const metric = SCORE_METRICS[game.id]
+    const pick = metric.direction === 'lower-better' ? Math.min : Math.max
+    next[game.id] = {
+      count: values.length,
+      best: storedBest !== null ? pick(storedBest, ...values) : pick(...values),
+      average: values.reduce((a, b) => a + b, 0) / values.length,
+    }
+  }
+  return next
+}
+
 type StatsTab = 'reflex' | 'daily'
 
 export default function StatsPage() {
@@ -83,7 +103,7 @@ export default function StatsPage() {
   useEffect(() => {
     const client = supabase
     if (!user || !client) {
-      setStats({})
+      setStats(localStats())
       setLoading(false)
       return
     }
@@ -153,7 +173,7 @@ export default function StatsPage() {
     </button>
   )
 
-  const showSignInGate = tab === 'reflex' && !authLoading && !user
+  const showSignInNudge = tab === 'reflex' && !authLoading && !user
 
   return (
     <div className="pt-6">
@@ -161,7 +181,9 @@ export default function StatsPage() {
         title="Your stats"
         subtitle={
           tab === 'reflex'
-            ? 'Average and best score for every test, since you signed in.'
+            ? user
+              ? 'Average and best score for every test, since you signed in.'
+              : 'Average and best score for every test, tracked on this device.'
             : "Streaks and solve times for every daily puzzle — tracked on this device, no sign-in needed."
         }
       />
@@ -170,10 +192,10 @@ export default function StatsPage() {
         {tabButton('daily', 'Daily games')}
       </div>
 
-      {showSignInGate ? (
-        <div className="flex flex-col items-start gap-4 border-t border-border py-10">
-          <Button variant="primary" size="lg" onClick={() => setAuthOpen(true)}>
-            Sign in to view stats
+      {showSignInNudge && (
+        <div className="mb-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-5">
+          <Button variant="ghost" onClick={() => setAuthOpen(true)}>
+            Sign in to sync across devices
           </Button>
           {!configured && (
             <p className="text-sm text-text-dim">
@@ -181,7 +203,8 @@ export default function StatsPage() {
             </p>
           )}
         </div>
-      ) : tab === 'daily' ? (
+      )}
+      {tab === 'daily' ? (
         <DailyGamesStats />
       ) : (
         <div className="flex flex-col">

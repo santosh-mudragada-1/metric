@@ -79,7 +79,11 @@ export function setBest<K extends keyof Bests>(gameId: K, value: NonNullable<Bes
   const bests = getBests()
   bests[gameId] = value
   write('bests', bests)
+  window.dispatchEvent(new CustomEvent(BESTS_CHANGED_EVENT))
 }
+
+/** Fired on `window` whenever a personal best is saved, so every reader of it stays in sync. */
+export const BESTS_CHANGED_EVENT = 'metric:bests-changed'
 
 export interface Profile {
   clientPlayerId: string

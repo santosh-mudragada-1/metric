@@ -52,7 +52,7 @@ export function AimTrainerBoard({ phase, target, hits, totalTargets, streak, onS
 
   return (
     <div
-      onClick={onMiss}
+      onPointerDown={(e) => e.button === 0 && onMiss()}
       className="relative h-[65vh] min-h-96 max-h-[38rem] cursor-crosshair overflow-hidden rounded-panel border border-border bg-surface"
     >
       <div className="pointer-events-none absolute top-5 left-5 flex items-center gap-2 sm:top-7 sm:left-7">

@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { useGSAP } from '@gsap/react'
 import { shakeError } from '@/lib/animation/presets'
 import { playFail } from '@/lib/sound/sfx'
@@ -48,7 +48,7 @@ export function ReactionTimeBoard({ phase, round, totalRounds, lastMs, onStart, 
     }
   }, [phase])
 
-  const handleClick = () => {
+  const handlePress = () => {
     if (phase === 'idle') {
       onStart()
       return
@@ -56,12 +56,31 @@ export function ReactionTimeBoard({ phase, round, totalRounds, lastMs, onStart, 
     onTap()
   }
 
+  // Measure on press, not on click — `click` fires on release, which adds a ~100ms finger-lift
+  // to every reaction and makes the readout lie.
+  const pressRef = useRef(handlePress)
+  pressRef.current = handlePress
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.repeat || (e.key !== ' ' && e.key !== 'Enter')) return
+      const el = e.target as HTMLElement | null
+      if (el && el.closest('input, textarea, button, a')) return
+      e.preventDefault()
+      pressRef.current()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
   const onGo = phase === 'go'
 
   return (
     <div
       ref={boardRef}
-      onClick={handleClick}
+      onPointerDown={(e) => {
+        if (e.button !== 0) return
+        handlePress()
+      }}
       className={`relative flex h-[65vh] min-h-96 max-h-[38rem] select-none flex-col items-center justify-center
         gap-4 overflow-hidden rounded-panel border border-border text-center transition-[background-color]
         duration-0 cursor-pointer ${PHASE_STYLES[phase]}`}
@@ -93,7 +112,7 @@ export function ReactionTimeBoard({ phase, round, totalRounds, lastMs, onStart, 
           <p className="max-w-xs text-sm leading-relaxed text-text-muted">
             When the board turns green, click as fast as you can.
           </p>
-          <p className="mt-2 font-mono text-xs tracking-[0.14em] text-text-dim uppercase">click to start</p>
+          <p className="mt-2 font-mono text-xs tracking-[0.14em] text-text-dim uppercase">click or press space</p>
         </>
       )}
 
