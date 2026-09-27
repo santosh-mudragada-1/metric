@@ -3,6 +3,7 @@ import { usePostHog } from '@posthog/react'
 import { CHIMP_TEST, generateChimpLevel } from '@shared/gameConfig'
 import { useLocalBest } from '@/hooks/useLocalBest'
 import { useRemoteScore } from '@/hooks/useRemoteScore'
+import { gameStarted } from '@/lib/myAnalytics'
 
 export type ChimpPhase = 'idle' | 'countdown' | 'input' | 'wrongTile' | 'levelUp' | 'result'
 
@@ -25,6 +26,7 @@ export function useChimpTestSolo() {
     recordedRef.current = false
     setPhase('countdown')
     posthog?.capture('game_started', { game: 'chimp-test', mode: 'practice' })
+    gameStarted('chimp-test', 'practice')
   }, [posthog])
 
   const onCountdownDone = useCallback(() => {

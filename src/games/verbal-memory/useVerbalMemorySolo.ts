@@ -4,6 +4,7 @@ import { VERBAL_MEMORY, generateVerbalMemoryWords, wasWordSeenBefore } from '@sh
 import { useLocalBest } from '@/hooks/useLocalBest'
 import { useRemoteScore } from '@/hooks/useRemoteScore'
 import { playFail, playReveal } from '@/lib/sound/sfx'
+import { gameStarted } from '@/lib/myAnalytics'
 
 export type VerbalPhase = 'idle' | 'countdown' | 'playing' | 'result'
 export type VerbalAnswer = 'seen' | 'new'
@@ -30,6 +31,7 @@ export function useVerbalMemorySolo() {
     recordedRef.current = false
     setPhase('countdown')
     posthog?.capture('game_started', { game: 'verbal-memory', mode: 'practice' })
+    gameStarted('verbal-memory', 'practice')
   }, [posthog])
 
   const onCountdownDone = useCallback(() => setPhase('playing'), [])

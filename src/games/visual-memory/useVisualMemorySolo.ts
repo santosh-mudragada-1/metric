@@ -4,6 +4,7 @@ import { VISUAL_MEMORY, generateVisualMemoryLevel } from '@shared/gameConfig'
 import { useLocalBest } from '@/hooks/useLocalBest'
 import { useRemoteScore } from '@/hooks/useRemoteScore'
 import { playFail, playReveal } from '@/lib/sound/sfx'
+import { gameStarted } from '@/lib/myAnalytics'
 
 export type VisualPhase = 'idle' | 'countdown' | 'showing' | 'input' | 'wrongTile' | 'levelUp' | 'result'
 
@@ -25,6 +26,7 @@ export function useVisualMemorySolo() {
     recordedRef.current = false
     setPhase('countdown')
     posthog?.capture('game_started', { game: 'visual-memory', mode: 'practice' })
+    gameStarted('visual-memory', 'practice')
   }, [posthog])
 
   const onCountdownDone = useCallback(() => {

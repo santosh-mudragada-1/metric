@@ -9,6 +9,7 @@ import { DailyGameCard } from '@/daily/shared/DailyGameCard'
 import { Button } from '@/components/ui/Button'
 import { playClick, playFail } from '@/lib/sound/sfx'
 import { withViewTransition } from '@/lib/viewTransition'
+import { gameFailed } from '@/lib/myAnalytics'
 
 interface HardwordState {
   guesses: string[]
@@ -82,6 +83,7 @@ export function HardwordGame() {
       else if (next.length >= maxGuesses) {
         playFail()
         posthog?.capture('game_failed', { game: 'hardword', mode: 'daily', attempts: next.length })
+        gameFailed('hardword', 'daily', { attempts: next.length })
       }
     }, revealMs)
   }

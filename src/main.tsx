@@ -4,7 +4,9 @@ import { PostHogProvider } from '@posthog/react'
 import './index.css'
 import App from './App.tsx'
 import { initializePostHog } from '@/lib/analytics'
+import { initMyAnalytics } from '@/lib/myAnalytics'
 
+initMyAnalytics()
 const posthog = initializePostHog()
 const app = (
   <StrictMode>

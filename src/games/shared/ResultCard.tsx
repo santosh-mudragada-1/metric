@@ -13,6 +13,7 @@ import { countUp, flashSuccess, staggerReveal } from '@/lib/animation/presets'
 import { playBack, playCopy, playSuccess } from '@/lib/sound/sfx'
 import { bestMetric, getPlayStreak, getRuns, isBetter, percentileFor } from '@/lib/progress'
 import type { GameId } from '@shared/types'
+import { track } from '@/lib/myAnalytics'
 
 interface StatItem {
   label: string
@@ -194,6 +195,7 @@ export function ResultCard({
       share_method: shared ? 'native_share' : 'clipboard',
       is_new_best: newBest,
     })
+    track('result_shared', { game: gameId, mode: 'practice', share_method: shared ? 'native_share' : 'clipboard' })
     posthog?.capture('result_shared', {
       game: gameId,
       mode: 'practice',

@@ -4,6 +4,7 @@ import { SEQUENCE_MEMORY, extendSequence, generateSequence } from '@shared/gameC
 import { useLocalBest } from '@/hooks/useLocalBest'
 import { useRemoteScore } from '@/hooks/useRemoteScore'
 import { playFail, playReveal } from '@/lib/sound/sfx'
+import { gameStarted } from '@/lib/myAnalytics'
 
 export type SequencePhase = 'idle' | 'countdown' | 'showing' | 'input' | 'wrongTile' | 'levelUp' | 'result'
 
@@ -23,6 +24,7 @@ export function useSequenceMemorySolo() {
     recordedRef.current = false
     setPhase('countdown')
     posthog?.capture('game_started', { game: 'sequence-memory', mode: 'practice' })
+    gameStarted('sequence-memory', 'practice')
   }, [posthog])
 
   const onCountdownDone = useCallback(() => {

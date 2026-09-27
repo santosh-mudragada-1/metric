@@ -3,6 +3,7 @@ import { usePostHog } from '@posthog/react'
 import type { GameId } from '@shared/types'
 import { supabase } from '@/lib/supabase'
 import { recordRun } from '@/lib/progress'
+import { captureError, gameCompleted } from '@/lib/myAnalytics'
 
 /** Logs one completed run locally (history + play streak) and to Supabase for the signed-in player. */
 export function useRemoteScore(gameId: GameId) {
@@ -17,6 +18,7 @@ export function useRemoteScore(gameId: GameId) {
         metric_value: metricValue,
         ...extra,
       })
+      gameCompleted(gameId, 'practice', { metric_value: metricValue, ...extra })
       if (!supabase) return
       // Re-checks the session directly instead of trusting a `user` value captured in a closure —
       // that value can still be null right after a page load (the initial `getSession()` call
@@ -35,10 +37,16 @@ export function useRemoteScore(gameId: GameId) {
         const { error: retryError } = await supabase
           .from('game_results')
           .insert({ user_id: user.id, game_id: gameId, metric_value: metricValue })
-        if (retryError) console.error(`Failed to log ${gameId} result to Supabase:`, retryError)
+        if (retryError) {
+          console.error(`Failed to log ${gameId} result to Supabase:`, retryError)
+          captureError(new Error(`Supabase save_score failed: ${retryError.message}`), { game: gameId })
+        }
         return
       }
-      if (error) console.error(`Failed to log ${gameId} result to Supabase:`, error)
+      if (error) {
+        console.error(`Failed to log ${gameId} result to Supabase:`, error)
+        captureError(new Error(`Supabase save_score failed: ${error.message}`), { game: gameId })
+      }
     },
     [gameId, posthog],
   )

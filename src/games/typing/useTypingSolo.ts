@@ -3,6 +3,7 @@ import { usePostHog } from '@posthog/react'
 import { generateTypingPassage } from '@shared/gameConfig'
 import { useLocalBest } from '@/hooks/useLocalBest'
 import { useRemoteScore } from '@/hooks/useRemoteScore'
+import { gameStarted } from '@/lib/myAnalytics'
 
 export type TypingPhase = 'idle' | 'countdown' | 'typing' | 'result'
 
@@ -36,6 +37,7 @@ export function useTypingSolo() {
     recordedRef.current = false
     setPhase('countdown')
     posthog?.capture('game_started', { game: 'typing', mode: 'practice' })
+    gameStarted('typing', 'practice')
   }, [posthog])
 
   const onCountdownDone = useCallback(() => {

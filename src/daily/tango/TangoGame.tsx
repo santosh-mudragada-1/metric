@@ -10,6 +10,7 @@ import { DailyGameCard } from '@/daily/shared/DailyGameCard'
 import { PuzzleHelp } from '@/daily/shared/PuzzleHelp'
 import { Button } from '@/components/ui/Button'
 import { playClick } from '@/lib/sound/sfx'
+import { track } from '@/lib/myAnalytics'
 
 interface TangoState {
   grid: TangoSymbol[]
@@ -100,6 +101,7 @@ export function TangoGame() {
     next[idx] = solution[idx]
     pushAndSet({ grid: next })
     posthog?.capture('hint_used', { game: 'tango', mode: 'daily' })
+    track('hint_used', { game: 'tango', mode: 'daily' })
     if (isTangoSolved(next, puzzle)) trigger((2 * size - 2) * 40 + 340)
   }
 

@@ -3,6 +3,7 @@ import { usePostHog } from '@posthog/react'
 import { NUMBER_MEMORY, generateNumber, numberDisplayMs } from '@shared/gameConfig'
 import { useLocalBest } from '@/hooks/useLocalBest'
 import { useRemoteScore } from '@/hooks/useRemoteScore'
+import { gameStarted } from '@/lib/myAnalytics'
 
 export type NumberPhase = 'idle' | 'countdown' | 'showing' | 'input' | 'reveal' | 'result'
 
@@ -34,6 +35,7 @@ export function useNumberMemorySolo() {
     recordedRef.current = false
     setPhase('countdown')
     posthog?.capture('game_started', { game: 'number-memory', mode: 'practice' })
+    gameStarted('number-memory', 'practice')
   }, [posthog])
 
   const onCountdownDone = useCallback(() => beginRound(NUMBER_MEMORY.startDigits), [beginRound])

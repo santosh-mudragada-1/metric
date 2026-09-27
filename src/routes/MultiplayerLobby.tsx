@@ -10,6 +10,7 @@ import { playClick, playFail, playHover } from '@/lib/sound/sfx'
 import { useProfile } from '@/hooks/useProfile'
 import { generateRoomCode } from '@/lib/roomCode'
 import { withViewTransition } from '@/lib/viewTransition'
+import { partyCreated } from '@/lib/myAnalytics'
 
 type LobbyMode = 'choose' | 'join'
 
@@ -110,6 +111,7 @@ export default function MultiplayerLobby() {
     posthog?.capture('multiplayer_room_created')
     playClick()
     const code = generateRoomCode()
+    partyCreated(code)
     withViewTransition(() => navigate(`/party/${code}`))
   }
 

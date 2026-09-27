@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Navigate, useParams } from 'react-router'
 import type { GameId } from '@shared/types'
 import { GAME_MAP, isGameId } from '@/games.config'
@@ -12,6 +13,7 @@ import { ChimpTestGame } from '@/games/chimp-test/ChimpTestGame'
 import { VisualMemoryGame } from '@/games/visual-memory/VisualMemoryGame'
 import { VerbalMemoryGame } from '@/games/verbal-memory/VerbalMemoryGame'
 import { TypingGame } from '@/games/typing/TypingGame'
+import { gameScreenLeft } from '@/lib/myAnalytics'
 
 /** The number to chase — sits in the header for the whole run. */
 function BestReadout({ gameId }: { gameId: GameId }) {
@@ -30,6 +32,7 @@ function BestReadout({ gameId }: { gameId: GameId }) {
 
 export default function GamePage() {
   const { gameId } = useParams<{ gameId: string }>()
+  useEffect(() => () => gameScreenLeft(), [gameId])
 
   if (!gameId || !isGameId(gameId)) return <Navigate to="/" replace />
 

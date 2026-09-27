@@ -12,6 +12,7 @@ import {
   type DailyProgress,
 } from '@/lib/storage'
 import { playSuccess } from '@/lib/sound/sfx'
+import { gameCompleted, gameStarted } from '@/lib/myAnalytics'
 
 /**
  * Generates today's puzzle once (seeded so every player sees the same board), restores any
@@ -40,6 +41,7 @@ export function useDailyPuzzle<Puzzle, State>(
     startedRef.current = true
     posthog?.capture('daily_puzzle_started', { game_id: gameId })
     posthog?.capture('game_started', { game: gameId, mode: 'daily' })
+    gameStarted(gameId, 'daily')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -74,6 +76,7 @@ export function useDailyPuzzle<Puzzle, State>(
       completion_time: completionTime,
       streak: next.streak,
     })
+    gameCompleted(gameId, 'daily', { duration_s: completionTime, streak: next.streak })
 
     if (prevStreak === 0) {
       posthog?.capture('streak_started', { game: gameId, mode: 'daily', streak: next.streak })

@@ -3,6 +3,7 @@ import { usePostHog } from '@posthog/react'
 import { REACTION_TIME, generateReactionDelay } from '@shared/gameConfig'
 import { useLocalBest } from '@/hooks/useLocalBest'
 import { useRemoteScore } from '@/hooks/useRemoteScore'
+import { gameStarted } from '@/lib/myAnalytics'
 
 export type ReactionPhase = 'idle' | 'countdown' | 'waiting' | 'tooSoon' | 'go' | 'roundResult' | 'result'
 
@@ -43,6 +44,7 @@ export function useReactionTimeSolo() {
     recordedRef.current = false
     setPhase('countdown')
     posthog?.capture('game_started', { game: 'reaction-time', mode: 'practice' })
+    gameStarted('reaction-time', 'practice')
   }, [posthog])
 
   const onCountdownDone = useCallback(() => armRound(), [armRound])

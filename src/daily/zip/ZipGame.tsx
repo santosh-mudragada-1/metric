@@ -10,6 +10,7 @@ import { PuzzleHelp } from '@/daily/shared/PuzzleHelp'
 import { Button } from '@/components/ui/Button'
 import { ArrowPathIcon, ArrowUturnLeftIcon, CheckIcon, SparklesIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { playClick } from '@/lib/sound/sfx'
+import { track } from '@/lib/myAnalytics'
 
 interface ZipState {
   path: number[]
@@ -155,6 +156,7 @@ export function ZipGame() {
     const next = solutionPath.slice(0, Math.min(path.length + 1, total))
     pushAndSet({ path: next })
     posthog?.capture('hint_used', { game: 'zip', mode: 'daily' })
+    track('hint_used', { game: 'zip', mode: 'daily' })
     if (next.length === total) trigger(celebrationDuration())
   }
 

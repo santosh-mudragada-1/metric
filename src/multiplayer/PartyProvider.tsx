@@ -7,6 +7,7 @@ import { PARTY_HOST } from '@/lib/partyHost'
 import { useProfile } from '@/hooks/useProfile'
 import { detectDeviceType } from '@/lib/device'
 import { PartyRoomContext } from './PartyRoomContext'
+import { partyEntered, partyLeft } from '@/lib/myAnalytics'
 
 const CONNECT_TIMEOUT_MS = 10_000
 
@@ -19,6 +20,16 @@ export function PartyProvider({ roomCode, children }: { roomCode: string; childr
   const [nudge, setNudge] = useState<{ playerIds: string[]; at: number } | null>(null)
   const profileRef = useRef(profile)
   profileRef.current = profile
+  const enteredAt = useRef<number | null>(null)
+
+  // My Analytics: one party_joined per visit to a room (invite links included), party_left on the way out.
+  useEffect(
+    () => () => {
+      if (enteredAt.current !== null) partyLeft(Math.round((Date.now() - enteredAt.current) / 1000))
+      enteredAt.current = null
+    },
+    [roomCode],
+  )
 
   const socket = usePartySocket({
     host: PARTY_HOST,
@@ -26,6 +37,10 @@ export function PartyProvider({ roomCode, children }: { roomCode: string; childr
     room: roomCode.toLowerCase(),
     onOpen: () => {
       setConnected(true)
+      if (enteredAt.current === null) {
+        enteredAt.current = Date.now()
+        partyEntered(roomCode)
+      }
       socket.send(
         JSON.stringify({
           type: 'join',

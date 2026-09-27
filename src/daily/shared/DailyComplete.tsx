@@ -10,6 +10,7 @@ import { withViewTransition } from '@/lib/viewTransition'
 import { DAILY_ACCENT_CLASSES, DAILY_GAMES, DAILY_GAME_MAP } from '@/dailyGames.config'
 import { getDailyProgress, getDailyTimeStats, type DailyGameId, type DailyProgress } from '@/lib/storage'
 import { todayKey } from '@/lib/dailySeed'
+import { track } from '@/lib/myAnalytics'
 
 function pickUnplayedGame(currentId: DailyGameId) {
   const today = todayKey()
@@ -52,6 +53,7 @@ export function DailyComplete({ gameId, progress }: { gameId: DailyGameId; progr
       share_method: shared ? 'native_share' : 'clipboard',
       streak: progress.streak,
     })
+    track('result_shared', { game: gameId, mode: 'daily', share_method: shared ? 'native_share' : 'clipboard' })
     posthog?.capture('result_shared', {
       game: gameId,
       mode: 'daily',

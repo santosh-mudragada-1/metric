@@ -9,6 +9,7 @@ import { PuzzleHelp } from '@/daily/shared/PuzzleHelp'
 import { Button } from '@/components/ui/Button'
 import { ArrowPathIcon, ArrowUturnLeftIcon, CheckIcon, SparklesIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { playClick } from '@/lib/sound/sfx'
+import { track } from '@/lib/myAnalytics'
 
 interface PatchesState {
   rects: Rect[]
@@ -306,6 +307,7 @@ export function PatchesGame() {
     const next = [...rects, missing]
     pushAndSet({ rects: next })
     posthog?.capture('hint_used', { game: 'patches', mode: 'daily' })
+    track('hint_used', { game: 'patches', mode: 'daily' })
     if (isPatchesSolved(next, puzzle)) trigger(next.length * 60 + 320)
   }
 

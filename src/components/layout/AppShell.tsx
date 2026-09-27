@@ -14,6 +14,9 @@ import { useSound } from '@/hooks/useSound'
 import { useTheme } from '@/hooks/useTheme'
 import { enterMode } from '@/lib/animation/presets'
 import { trackPageView } from '@/lib/analytics'
+import { MetricFeedbackButton } from '@/components/layout/MyAnalyticsBridge'
+import { useMyAnalyticsAuth } from '@/hooks/useMyAnalyticsAuth'
+import { showFeedback } from '@/lib/myAnalytics'
 
 const NAV_ITEMS = [
   { to: '/', label: 'Play', end: true },
@@ -31,6 +34,7 @@ export function AppShell() {
   const [nameResolved, setNameResolved] = useState(false)
   const location = useLocation()
   const outletRef = useRef<HTMLDivElement>(null)
+  useMyAnalyticsAuth()
 
   useGSAP(() => {
     enterMode(outletRef.current)
@@ -113,11 +117,23 @@ export function AppShell() {
               {item.label}
             </NavLink>
           ))}
+          <button
+            type="button"
+            onClick={() => {
+              setNavOpen(false)
+              showFeedback()
+            }}
+            className="cursor-pointer rounded-lg px-3 py-3 text-left font-display text-base font-semibold text-text-muted
+              transition-colors duration-150 hover:bg-surface-hover hover:text-text"
+          >
+            Feedback
+          </button>
         </nav>
       </Modal>
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
       <NamePrompt onResolved={() => setNameResolved(true)} />
       {nameResolved && <AddPasskeyPrompt />}
+      <MetricFeedbackButton />
     </div>
   )
 }

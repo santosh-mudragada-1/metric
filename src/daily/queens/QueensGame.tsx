@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button'
 import { ArrowPathIcon, ArrowUturnLeftIcon, CheckIcon, SparklesIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { playClick } from '@/lib/sound/sfx'
 import type { CSSProperties } from 'react'
+import { track } from '@/lib/myAnalytics'
 
 interface QueensState {
   grid: QueensCell[]
@@ -101,6 +102,7 @@ export function QueensGame() {
     next[idx] = 2
     pushAndSet({ grid: next })
     posthog?.capture('hint_used', { game: 'queens', mode: 'daily' })
+    track('hint_used', { game: 'queens', mode: 'daily' })
     if (isQueensSolved(next, puzzle)) trigger(size * 90 + 420)
   }
 

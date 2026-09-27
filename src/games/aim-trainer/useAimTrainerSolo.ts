@@ -3,6 +3,7 @@ import { usePostHog } from '@posthog/react'
 import { AIM_TRAINER, generateAimTargets } from '@shared/gameConfig'
 import { useLocalBest } from '@/hooks/useLocalBest'
 import { useRemoteScore } from '@/hooks/useRemoteScore'
+import { gameStarted } from '@/lib/myAnalytics'
 
 export type AimPhase = 'idle' | 'countdown' | 'playing' | 'result'
 
@@ -52,6 +53,7 @@ export function useAimTrainerSolo() {
     recordedRef.current = false
     setPhase('countdown')
     posthog?.capture('game_started', { game: 'aim-trainer', mode: 'practice' })
+    gameStarted('aim-trainer', 'practice')
   }, [posthog])
 
   const onCountdownDone = useCallback(() => {
