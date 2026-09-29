@@ -1,3 +1,4 @@
+import { track } from '@my-analytics/client'
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
 import { usePostHog } from '@posthog/react'
 import { generateZip, isWallBetween } from '@/daily/zip/generateZip'
@@ -147,6 +148,7 @@ export function ZipGame() {
     playClick()
     pushAndSet({ path: [] })
     posthog?.capture('clear_used', { game: 'zip', mode: 'daily' })
+    track('clear_used', { game: 'zip', mode: 'daily' })
   }
 
   const hint = () => {
@@ -155,6 +157,7 @@ export function ZipGame() {
     const next = solutionPath.slice(0, Math.min(path.length + 1, total))
     pushAndSet({ path: next })
     posthog?.capture('hint_used', { game: 'zip', mode: 'daily' })
+    track('hint_used', { game: 'zip', mode: 'daily' })
     if (next.length === total) trigger(celebrationDuration())
   }
 

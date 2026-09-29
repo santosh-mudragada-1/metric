@@ -1,3 +1,4 @@
+import { track } from '@my-analytics/client'
 import { usePostHog } from '@posthog/react'
 import { generateQueens, isQueensSolved, type QueensCell } from '@/daily/queens/generateQueens'
 import { useDailyPuzzle } from '@/daily/shared/useDailyPuzzle'
@@ -101,6 +102,7 @@ export function QueensGame() {
     next[idx] = 2
     pushAndSet({ grid: next })
     posthog?.capture('hint_used', { game: 'queens', mode: 'daily' })
+    track('hint_used', { game: 'queens', mode: 'daily' })
     if (isQueensSolved(next, puzzle)) trigger(size * 90 + 420)
   }
 
@@ -108,6 +110,7 @@ export function QueensGame() {
     playClick()
     pushAndSet({ grid: new Array(size * size).fill(0) as QueensCell[] })
     posthog?.capture('clear_used', { game: 'queens', mode: 'daily' })
+    track('clear_used', { game: 'queens', mode: 'daily' })
   }
 
   return (

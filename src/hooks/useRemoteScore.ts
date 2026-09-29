@@ -1,3 +1,4 @@
+import { track } from '@my-analytics/client'
 import { useCallback } from 'react'
 import { usePostHog } from '@posthog/react'
 import type { GameId } from '@shared/types'
@@ -17,6 +18,7 @@ export function useRemoteScore(gameId: GameId) {
         metric_value: metricValue,
         ...extra,
       })
+      track('game_completed', { game: gameId, mode: 'practice', metric_value: metricValue, ...extra })
       if (!supabase) return
       // Re-checks the session directly instead of trusting a `user` value captured in a closure —
       // that value can still be null right after a page load (the initial `getSession()` call

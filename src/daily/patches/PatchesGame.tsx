@@ -1,3 +1,4 @@
+import { track } from '@my-analytics/client'
 import { useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
 import { usePostHog } from '@posthog/react'
 import { generatePatches, isPatchesSolved, PATCHES_PALETTE, type PatchesShape, type Rect } from '@/daily/patches/generatePatches'
@@ -306,6 +307,7 @@ export function PatchesGame() {
     const next = [...rects, missing]
     pushAndSet({ rects: next })
     posthog?.capture('hint_used', { game: 'patches', mode: 'daily' })
+    track('hint_used', { game: 'patches', mode: 'daily' })
     if (isPatchesSolved(next, puzzle)) trigger(next.length * 60 + 320)
   }
 
@@ -313,6 +315,7 @@ export function PatchesGame() {
     playClick()
     pushAndSet({ rects: [] })
     posthog?.capture('clear_used', { game: 'patches', mode: 'daily' })
+    track('clear_used', { game: 'patches', mode: 'daily' })
   }
 
   const dragRect = dragStart && dragCurrent ? boundsOf(dragStart, dragCurrent) : null

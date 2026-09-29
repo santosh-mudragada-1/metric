@@ -16,6 +16,7 @@
   "dependencies": {
     "@gsap/react": "^2.1.2",
     "@heroicons/react": "^2.2.0",
+    "@my-analytics/client": "https://my-analytics-ruby.vercel.app/sdk/my-analytics-client-0.1.2.tgz",
     "@posthog/react": "^1.11.1",
     "@supabase/supabase-js": "^2.116.0",
     "gsap": "^3.15.0",

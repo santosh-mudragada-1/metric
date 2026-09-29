@@ -1,3 +1,4 @@
+import { track } from '@my-analytics/client'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { usePostHog } from '@posthog/react'
 import { createDailyRng, todayKey, yesterdayKey } from '@/lib/dailySeed'
@@ -39,7 +40,9 @@ export function useDailyPuzzle<Puzzle, State>(
     if (startedRef.current || completedToday) return
     startedRef.current = true
     posthog?.capture('daily_puzzle_started', { game_id: gameId })
+    track('daily_puzzle_started', { game_id: gameId })
     posthog?.capture('game_started', { game: gameId, mode: 'daily' })
+    track('game_started', { game: gameId, mode: 'daily' })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -74,13 +77,18 @@ export function useDailyPuzzle<Puzzle, State>(
       completion_time: completionTime,
       streak: next.streak,
     })
+    track('game_completed', { game: gameId, mode: 'daily', completion_time: completionTime, streak: next.streak })
+    track('daily_challenge_completed', { game_id: gameId, duration_ms: durationMs, streak: next.streak })
 
     if (prevStreak === 0) {
       posthog?.capture('streak_started', { game: gameId, mode: 'daily', streak: next.streak })
+      track('streak_started', { game: gameId, mode: 'daily', streak: next.streak })
     } else if (next.streak === 1) {
       posthog?.capture('streak_broken', { game: gameId, mode: 'daily', previous_streak: prevStreak })
+      track('streak_broken', { game: gameId, mode: 'daily', previous_streak: prevStreak })
     } else {
       posthog?.capture('streak_extended', { game: gameId, mode: 'daily', streak: next.streak })
+      track('streak_extended', { game: gameId, mode: 'daily', streak: next.streak })
     }
 
     setProgress(next)

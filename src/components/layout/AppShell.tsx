@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router'
 import { useGSAP } from '@gsap/react'
+import { FeedbackButton } from '@my-analytics/client/react'
 import { Bars3Icon, MoonIcon, SpeakerWaveIcon, SpeakerXMarkIcon, SunIcon } from '@heroicons/react/24/outline'
 import { IconButton } from '@/components/ui/IconButton'
 import { Button } from '@/components/ui/Button'
@@ -118,6 +119,8 @@ export function AppShell() {
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
       <NamePrompt onResolved={() => setNameResolved(true)} />
       {nameResolved && <AddPasskeyPrompt />}
+      {/* Hardword docks an on-screen keyboard along the bottom edge, exactly where the button sits. */}
+      {location.pathname !== '/daily/hardword' && <FeedbackButton position="bottom-left" offset={16} />}
     </div>
   )
 }

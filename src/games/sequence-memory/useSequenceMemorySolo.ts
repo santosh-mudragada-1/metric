@@ -1,3 +1,4 @@
+import { track } from '@my-analytics/client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePostHog } from '@posthog/react'
 import { SEQUENCE_MEMORY, extendSequence, generateSequence } from '@shared/gameConfig'
@@ -23,6 +24,7 @@ export function useSequenceMemorySolo() {
     recordedRef.current = false
     setPhase('countdown')
     posthog?.capture('game_started', { game: 'sequence-memory', mode: 'practice' })
+    track('game_started', { game: 'sequence-memory', mode: 'practice' })
   }, [posthog])
 
   const onCountdownDone = useCallback(() => {

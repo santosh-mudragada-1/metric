@@ -1,5 +1,6 @@
 import { createContext, useEffect, useState, type ReactNode } from 'react'
 import { usePostHog } from '@posthog/react'
+import { identify as identifyAnalytics, reset as resetAnalytics } from '@my-analytics/client'
 import type { User } from '@supabase/supabase-js'
 import { isSupabaseConfigured, supabase } from '@/lib/supabase'
 import { migrateLocalBestsIfNeeded } from '@/lib/statsMigration'
@@ -60,6 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const sessionUser = data.session?.user ?? null
       setUser(sessionUser)
       if (sessionUser) {
+        identifyAnalytics(sessionUser.id)
         posthog?.identify(sessionUser.id, {
           email: sessionUser.email,
           auth_provider: sessionUser.app_metadata.provider,
@@ -71,6 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const sessionUser = session?.user ?? null
       setUser(sessionUser)
       if (sessionUser) {
+        identifyAnalytics(sessionUser.id)
         posthog?.identify(sessionUser.id, {
           email: sessionUser.email,
           auth_provider: sessionUser.app_metadata.provider,
@@ -90,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         }
       } else if (event === 'SIGNED_OUT') {
+        resetAnalytics()
         posthog?.capture('user_signed_out')
         posthog?.reset()
       }

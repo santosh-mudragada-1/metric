@@ -1,3 +1,4 @@
+import { track } from '@my-analytics/client'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
 import { useGSAP } from '@gsap/react'
@@ -200,6 +201,7 @@ export function ResultCard({
       share_method: shared ? 'native_share' : 'clipboard',
       is_new_best: newBest,
     })
+    track('result_shared', { game: gameId, mode: 'practice', share_method: shared ? 'native_share' : 'clipboard' })
     playCopy()
     flashSuccess(rootRef.current)
     setShareState('copied')

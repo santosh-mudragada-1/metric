@@ -1,3 +1,4 @@
+import { track } from '@my-analytics/client'
 import { useEffect, useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router'
@@ -82,6 +83,7 @@ export function HardwordGame() {
       else if (next.length >= maxGuesses) {
         playFail()
         posthog?.capture('game_failed', { game: 'hardword', mode: 'daily', attempts: next.length })
+        track('game_failed', { game: 'hardword', mode: 'daily', attempts: next.length })
       }
     }, revealMs)
   }

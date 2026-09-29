@@ -1,3 +1,4 @@
+import { track } from '@my-analytics/client'
 import { useRef, useState } from 'react'
 import { usePostHog } from '@posthog/react'
 import type { DailyGameId } from '@/lib/storage'
@@ -25,6 +26,7 @@ export function useHistory<T>(gameId: DailyGameId, state: T, setState: (updater:
     setCanUndo(stack.current.length > 0)
     setState(prev)
     posthog?.capture('undo_used', { game: gameId, mode: 'daily' })
+    track('undo_used', { game: gameId, mode: 'daily' })
   }
 
   return { pushAndSet, undo, canUndo }

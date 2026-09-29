@@ -1,3 +1,4 @@
+import { track } from '@my-analytics/client'
 import { type ReactNode, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { usePostHog } from '@posthog/react'
@@ -108,6 +109,7 @@ export default function MultiplayerLobby() {
       return
     }
     posthog?.capture('multiplayer_room_created')
+    track('party_created')
     playClick()
     const code = generateRoomCode()
     withViewTransition(() => navigate(`/party/${code}`))
@@ -120,6 +122,7 @@ export default function MultiplayerLobby() {
       return
     }
     posthog?.capture('multiplayer_room_joined')
+    track('party_joined')
     playClick()
     withViewTransition(() => navigate(`/party/${joinCode.trim().toUpperCase()}`))
   }

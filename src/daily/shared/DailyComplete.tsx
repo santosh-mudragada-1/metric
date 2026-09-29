@@ -1,3 +1,4 @@
+import { track } from '@my-analytics/client'
 import { useNavigate } from 'react-router'
 import { TrophyIcon } from '@heroicons/react/24/solid'
 import { ArrowUpOnSquareIcon, CheckIcon } from '@heroicons/react/24/outline'
@@ -58,6 +59,7 @@ export function DailyComplete({ gameId, progress }: { gameId: DailyGameId; progr
       share_method: shared ? 'native_share' : 'clipboard',
       streak: progress.streak,
     })
+    track('result_shared', { game: gameId, mode: 'daily', share_method: shared ? 'native_share' : 'clipboard' })
     playCopy()
     setShareState('copied')
     setTimeout(() => setShareState('idle'), 1800)

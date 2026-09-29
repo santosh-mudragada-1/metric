@@ -1,3 +1,4 @@
+import { track } from '@my-analytics/client'
 import type { CSSProperties } from 'react'
 import { usePostHog } from '@posthog/react'
 import { SunIcon, MoonIcon } from '@heroicons/react/24/solid'
@@ -100,6 +101,7 @@ export function TangoGame() {
     next[idx] = solution[idx]
     pushAndSet({ grid: next })
     posthog?.capture('hint_used', { game: 'tango', mode: 'daily' })
+    track('hint_used', { game: 'tango', mode: 'daily' })
     if (isTangoSolved(next, puzzle)) trigger((2 * size - 2) * 40 + 340)
   }
 
@@ -107,6 +109,7 @@ export function TangoGame() {
     playClick()
     pushAndSet({ grid: givens.slice() })
     posthog?.capture('clear_used', { game: 'tango', mode: 'daily' })
+    track('clear_used', { game: 'tango', mode: 'daily' })
   }
 
   const trackSizes = (n: number) => Array.from({ length: 2 * n - 1 }, (_, i) => (i % 2 === 0 ? '1fr' : '0.26fr')).join(' ')

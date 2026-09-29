@@ -1,3 +1,4 @@
+import { track } from '@my-analytics/client'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePostHog } from '@posthog/react'
 import { REACTION_TIME, generateReactionDelay } from '@shared/gameConfig'
@@ -43,6 +44,7 @@ export function useReactionTimeSolo() {
     recordedRef.current = false
     setPhase('countdown')
     posthog?.capture('game_started', { game: 'reaction-time', mode: 'practice' })
+    track('game_started', { game: 'reaction-time', mode: 'practice' })
   }, [posthog])
 
   const onCountdownDone = useCallback(() => armRound(), [armRound])

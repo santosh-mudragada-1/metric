@@ -1,3 +1,4 @@
+import { track } from '@my-analytics/client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePostHog } from '@posthog/react'
 import { generateTypingPassage } from '@shared/gameConfig'
@@ -36,6 +37,7 @@ export function useTypingSolo() {
     recordedRef.current = false
     setPhase('countdown')
     posthog?.capture('game_started', { game: 'typing', mode: 'practice' })
+    track('game_started', { game: 'typing', mode: 'practice' })
   }, [posthog])
 
   const onCountdownDone = useCallback(() => {

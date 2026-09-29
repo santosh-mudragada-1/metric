@@ -1,3 +1,4 @@
+import { track } from '@my-analytics/client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePostHog } from '@posthog/react'
 import { VERBAL_MEMORY, generateVerbalMemoryWords, wasWordSeenBefore } from '@shared/gameConfig'
@@ -30,6 +31,7 @@ export function useVerbalMemorySolo() {
     recordedRef.current = false
     setPhase('countdown')
     posthog?.capture('game_started', { game: 'verbal-memory', mode: 'practice' })
+    track('game_started', { game: 'verbal-memory', mode: 'practice' })
   }, [posthog])
 
   const onCountdownDone = useCallback(() => setPhase('playing'), [])

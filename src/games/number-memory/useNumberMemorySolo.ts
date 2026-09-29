@@ -1,3 +1,4 @@
+import { track } from '@my-analytics/client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePostHog } from '@posthog/react'
 import { NUMBER_MEMORY, generateNumber, numberDisplayMs } from '@shared/gameConfig'
@@ -34,6 +35,7 @@ export function useNumberMemorySolo() {
     recordedRef.current = false
     setPhase('countdown')
     posthog?.capture('game_started', { game: 'number-memory', mode: 'practice' })
+    track('game_started', { game: 'number-memory', mode: 'practice' })
   }, [posthog])
 
   const onCountdownDone = useCallback(() => beginRound(NUMBER_MEMORY.startDigits), [beginRound])

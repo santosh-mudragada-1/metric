@@ -1,3 +1,4 @@
+import { track } from '@my-analytics/client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePostHog } from '@posthog/react'
 import { AIM_TRAINER, generateAimTargets } from '@shared/gameConfig'
@@ -52,6 +53,7 @@ export function useAimTrainerSolo() {
     recordedRef.current = false
     setPhase('countdown')
     posthog?.capture('game_started', { game: 'aim-trainer', mode: 'practice' })
+    track('game_started', { game: 'aim-trainer', mode: 'practice' })
   }, [posthog])
 
   const onCountdownDone = useCallback(() => {

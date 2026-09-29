@@ -1,3 +1,4 @@
+import { track } from '@my-analytics/client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePostHog } from '@posthog/react'
 import { CHIMP_TEST, generateChimpLevel } from '@shared/gameConfig'
@@ -25,6 +26,7 @@ export function useChimpTestSolo() {
     recordedRef.current = false
     setPhase('countdown')
     posthog?.capture('game_started', { game: 'chimp-test', mode: 'practice' })
+    track('game_started', { game: 'chimp-test', mode: 'practice' })
   }, [posthog])
 
   const onCountdownDone = useCallback(() => {
