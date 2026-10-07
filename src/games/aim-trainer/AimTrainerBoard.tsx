@@ -53,7 +53,7 @@ export function AimTrainerBoard({ phase, target, hits, totalTargets, streak, onS
   return (
     <div
       onPointerDown={(e) => e.button === 0 && onMiss()}
-      className="relative h-[65vh] min-h-96 max-h-[38rem] cursor-crosshair overflow-hidden rounded-panel border border-border bg-surface"
+      className="relative h-[65vh] min-h-96 max-h-[38rem] touch-none cursor-crosshair overflow-hidden rounded-panel border border-border bg-surface"
     >
       <div className="pointer-events-none absolute top-5 left-5 flex items-center gap-2 sm:top-7 sm:left-7">
         <span className="live-loop h-2 w-2 rounded-full bg-accent-aim shadow-[0_0_10px_1px_var(--color-accent-aim)]" />
