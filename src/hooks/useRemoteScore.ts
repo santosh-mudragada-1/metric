@@ -32,9 +32,7 @@ export function useRemoteScore(gameId: GameId) {
       const user = data?.user
       if (userError || !user) return
 
-      const columns = extra
-        ? Object.fromEntries(Object.entries(extra).filter(([key]) => EXTRA_RESULT_COLUMNS.has(key)))
-        : {}
+      const columns = Object.fromEntries(Object.entries(extra ?? {}).filter(([key]) => EXTRA_RESULT_COLUMNS.has(key)))
       const { error } = await supabase
         .from('game_results')
         .insert({ user_id: user.id, game_id: gameId, metric_value: metricValue, ...columns })
