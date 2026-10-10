@@ -27,6 +27,9 @@ interface AnimatedHeadingProps {
 }
 
 const letterStyle: CSSProperties = { display: 'inline-block', whiteSpace: 'pre' }
+// Each letter is its own inline-block, which lets the browser break between any two of them —
+// so letters are grouped per word and only the spaces between words can wrap.
+const wordStyle: CSSProperties = { whiteSpace: 'nowrap' }
 
 export function AnimatedHeading({
   as = 'h1',
@@ -140,10 +143,17 @@ export function AnimatedHeading({
         {lines.map((line, li) => (
           <Fragment key={li}>
             {li > 0 && <br />}
-            {line.split('').map((ch, ci) => (
-              <span key={ci} data-letter ref={registerLetter} style={letterStyle}>
-                {ch}
-              </span>
+            {line.split(' ').map((word, wi) => (
+              <Fragment key={wi}>
+                {wi > 0 && ' '}
+                <span style={wordStyle}>
+                  {word.split('').map((ch, ci) => (
+                    <span key={ci} data-letter ref={registerLetter} style={letterStyle}>
+                      {ch}
+                    </span>
+                  ))}
+                </span>
+              </Fragment>
             ))}
           </Fragment>
         ))}
