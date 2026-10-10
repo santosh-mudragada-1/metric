@@ -115,12 +115,13 @@ export function ResultCard({
     .filter(Boolean)
     .join(' · ')
 
-  // Enter / Space replays — the fastest path to "one more". Armed after a beat so the keypress that
-  // ended the run (e.g. submitting an answer) can't instantly restart it.
+  // Enter / Space replays — the fastest path to "one more". Armed after a beat so the input that
+  // ended the run can't instantly restart it: a keypress (e.g. submitting an answer), or the `click`
+  // the browser fires after a board's pointerdown tap, which lands on whatever button is now under it.
+  const [armedAt] = useState(() => performance.now() + 600)
   const playAgainRef = useRef(onPlayAgain)
   playAgainRef.current = onPlayAgain
   useEffect(() => {
-    const armedAt = performance.now() + 600
     const onKey = (e: KeyboardEvent) => {
       if (e.repeat || performance.now() < armedAt) return
       if (e.key !== 'Enter' && e.key !== ' ') return
@@ -131,7 +132,7 @@ export function ResultCard({
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  }, [armedAt])
 
   useGSAP(() => {
     const insightLines = insightRef.current ? (Array.from(insightRef.current.children) as Element[]) : []
@@ -209,7 +210,13 @@ export function ResultCard({
   }
 
   return (
-    <div ref={rootRef} className="flex flex-col items-center gap-10 py-10 text-center sm:py-16">
+    <div
+      ref={rootRef}
+      onClickCapture={(e) => {
+        if (performance.now() < armedAt) e.stopPropagation()
+      }}
+      className="flex flex-col items-center gap-10 py-10 text-center sm:py-16"
+    >
       {newBest && (
         <div
           className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 font-mono text-xs font-semibold

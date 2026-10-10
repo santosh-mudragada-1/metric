@@ -5,6 +5,10 @@ import { supabase } from '@/lib/supabase'
 import { recordRun } from '@/lib/progress'
 import { captureError, gameCompleted } from '@/lib/myAnalytics'
 
+/** Optional `game_results` columns (see supabase/schema.sql). Other `extra` fields go to analytics only —
+ *  sending a column the table doesn't have fails the whole insert. */
+const EXTRA_RESULT_COLUMNS = new Set(['avg_hit_ms'])
+
 /** Logs one completed run locally (history + play streak) and to Supabase for the signed-in player. */
 export function useRemoteScore(gameId: GameId) {
   const posthog = usePostHog()
@@ -28,10 +32,13 @@ export function useRemoteScore(gameId: GameId) {
       const user = data?.user
       if (userError || !user) return
 
+      const columns = extra
+        ? Object.fromEntries(Object.entries(extra).filter(([key]) => EXTRA_RESULT_COLUMNS.has(key)))
+        : {}
       const { error } = await supabase
         .from('game_results')
-        .insert({ user_id: user.id, game_id: gameId, metric_value: metricValue, ...extra })
-      if (error && extra) {
+        .insert({ user_id: user.id, game_id: gameId, metric_value: metricValue, ...columns })
+      if (error && Object.keys(columns).length > 0) {
         // `extra` columns (e.g. avg_hit_ms) may not exist on this project's table yet — retry
         // with just the base columns so the run is still recorded rather than dropped entirely.
         const { error: retryError } = await supabase
